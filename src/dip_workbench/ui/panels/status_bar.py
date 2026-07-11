@@ -32,6 +32,16 @@ class WorkbenchStatusBar(QStatusBar):
             f"Image: {asset.width} × {asset.height} • {names[asset.colour_model]} • {asset.bit_depth}-bit"  # noqa: RUF001
         )
 
+    def set_preview_image_status(self, asset: ImageAsset) -> None:
+        names = {
+            ColourModel.RGB: "RGB",
+            ColourModel.GRAY: "Grayscale",
+            ColourModel.BINARY: "Binary",
+        }
+        self.left_label.setText(
+            f"Preview: {asset.width} × {asset.height} • {names[asset.colour_model]} • {asset.bit_depth}-bit"  # noqa: RUF001
+        )
+
     def set_pixel_status(self, x: int, y: int, value: object, model: ColourModel) -> None:
         if model is ColourModel.RGB:
             text = f"x: {x}  y: {y}  RGB: {value}"

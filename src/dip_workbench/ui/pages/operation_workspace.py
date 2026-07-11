@@ -48,6 +48,15 @@ class OperationWorkspace(QWidget):
         self.image_canvas.set_image(asset)
         self._states.setCurrentIndex(1)
 
+    def set_preview_image(self, asset: ImageAsset, operation_name: str) -> None:
+        self.image_name_label.setText(f"Preview: {operation_name}")
+        self.image_info_label.setText("Not applied to Current Result")
+        self.image_canvas.set_image(asset)
+        self._states.setCurrentIndex(1)
+
+    def show_current_image(self, asset: ImageAsset) -> None:
+        self.set_image(asset)
+
     def clear_image(self) -> None:
         self.image_canvas.clear_image()
         self._states.setCurrentIndex(0)

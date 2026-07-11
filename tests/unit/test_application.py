@@ -9,6 +9,7 @@ from dip_workbench import application
 from dip_workbench.core import ColourModel, ImageAsset
 from dip_workbench.services import (
     ImageIOService,
+    ImageTransformService,
     LoggingService,
     SettingsService,
     TemporaryDirectoryManager,
@@ -32,6 +33,7 @@ def test_build_context_uses_injected_resources(tmp_path) -> None:  # type: ignor
         assert isinstance(context.settings, SettingsService)
         assert isinstance(context.temporary_directories, TemporaryDirectoryManager)
         assert isinstance(context.image_io, ImageIOService)
+        assert isinstance(context.image_transforms, ImageTransformService)
         assert isinstance(context.document_store, DocumentStore)
         assert (session / "history").is_dir()
         assert context.logging.log_path.parent == log_directory

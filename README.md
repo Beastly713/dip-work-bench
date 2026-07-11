@@ -59,6 +59,14 @@ Result, and use reset/undo/redo. The manual flow is: Open → Inspect → Zoom/P
 Undo/Redo. Sample images and academic operations remain unavailable; C06 adds editing utilities
 and reusable ROI selection.
 
+## Editing utilities and regions
+
+C06 adds Crop, Resize, Rotate, and Flip/Mirror with non-destructive previews and explicit Apply.
+Applied transforms enter normal undoable history. Resize supports aspect locking and explicit
+interpolation; rotation supports Expanded and Cropped canvases. Rectangular ROI selection uses
+full-resolution coordinates and can be retained without cropping. Academic operations remain
+unavailable; C07 introduces operation and artifact contracts.
+
 ## Architecture principles
 
 The project uses a Python 3.11 `src` layout, explicit dependency injection, typed application

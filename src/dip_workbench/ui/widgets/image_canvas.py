@@ -1,22 +1,37 @@
 """Reusable graphics-view image canvas."""
 
+import math
+from enum import StrEnum
 from pathlib import Path
 from typing import ClassVar
 
-from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtCore import QPoint, QPointF, Qt, Signal
 from PySide6.QtGui import (
+    QColor,
     QDragEnterEvent,
     QDragMoveEvent,
     QDropEvent,
     QKeyEvent,
     QMouseEvent,
+    QPen,
     QPixmap,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QWidget
+from PySide6.QtWidgets import (
+    QGraphicsPixmapItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QWidget,
+)
 
-from dip_workbench.core import ColourModel, ImageAsset
+from dip_workbench.core import ColourModel, ImageAsset, RectangularRegion
 from dip_workbench.ui.image_qt import image_asset_to_qimage
+
+
+class CanvasInteractionMode(StrEnum):
+    PAN = "pan"
+    RECTANGLE_SELECTION = "rectangle_selection"
 
 
 class ImageCanvas(QGraphicsView):
@@ -24,6 +39,9 @@ class ImageCanvas(QGraphicsView):
     pixel_hovered = Signal(int, int, object)
     pixel_left = Signal()
     file_dropped = Signal(object)
+    region_changed = Signal(object)
+    region_finished = Signal(object)
+    interaction_cancelled = Signal()
 
     MIN_ZOOM = 5.0
     MAX_ZOOM = 3200.0
@@ -40,6 +58,10 @@ class ImageCanvas(QGraphicsView):
         self._asset: ImageAsset | None = None
         self._fit_mode = False
         self._space_pressed = False
+        self._interaction_mode = CanvasInteractionMode.PAN
+        self._selected_region: RectangularRegion | None = None
+        self._selection_item: QGraphicsRectItem | None = None
+        self._drag_start: QPointF | None = None
         self.setMouseTracking(True)
         self.setAcceptDrops(True)
         self.setBackgroundBrush(Qt.GlobalColor.darkGray)
@@ -58,9 +80,19 @@ class ImageCanvas(QGraphicsView):
     def is_fit_to_view(self) -> bool:
         return self._fit_mode
 
+    @property
+    def interaction_mode(self) -> CanvasInteractionMode:
+        return self._interaction_mode
+
+    @property
+    def selected_region(self) -> RectangularRegion | None:
+        return self._selected_region
+
     def set_image(self, asset: ImageAsset) -> None:
         pixmap = QPixmap.fromImage(image_asset_to_qimage(asset))
         self._scene.clear()
+        self._selection_item = None
+        self._selected_region = None
         self._pixmap_item = self._scene.addPixmap(pixmap)
         self._pixmap_item.setPos(0, 0)
         self._scene.setSceneRect(0, 0, asset.width, asset.height)
@@ -74,6 +106,40 @@ class ImageCanvas(QGraphicsView):
         self._fit_mode = False
         self.resetTransform()
         self.pixel_left.emit()
+
+    def begin_rectangle_selection(self, region: RectangularRegion | None = None) -> None:
+        self._interaction_mode = CanvasInteractionMode.RECTANGLE_SELECTION
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.set_selected_region(region)
+
+    def set_selected_region(self, region: RectangularRegion | None) -> None:
+        if region is not None and (
+            self._asset is None or not region.fits_within(self._asset.width, self._asset.height)
+        ):
+            raise ValueError("Region does not fit the displayed image.")
+        self.clear_region_selection()
+        self._selected_region = region
+        if region is not None:
+            self._selection_item = self._scene.addRect(
+                region.x,
+                region.y,
+                region.width,
+                region.height,
+                QPen(QColor("#3b82f6"), 0),
+            )
+            self._selection_item.setZValue(10)
+
+    def clear_region_selection(self) -> None:
+        if self._selection_item is not None:
+            self._scene.removeItem(self._selection_item)
+        self._selection_item = None
+        self._selected_region = None
+
+    def cancel_interaction(self) -> None:
+        self._drag_start = None
+        self._interaction_mode = CanvasInteractionMode.PAN
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.interaction_cancelled.emit()
 
     def fit_to_view(self) -> None:
         if (
@@ -129,8 +195,54 @@ class ImageCanvas(QGraphicsView):
         event.accept()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self._drag_start is not None and not self._space_pressed:
+            region = self._region_from_points(
+                self._drag_start, self.mapToScene(event.position().toPoint())
+            )
+            if region is not None:
+                self.set_selected_region(region)
+                self.region_changed.emit(region)
+            event.accept()
+            return
         super().mouseMoveEvent(event)
         self._emit_pixel(event.position().toPoint())
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if (
+            self._interaction_mode is CanvasInteractionMode.RECTANGLE_SELECTION
+            and not self._space_pressed
+            and event.button() == Qt.MouseButton.LeftButton
+        ):
+            self._drag_start = self.mapToScene(event.position().toPoint())
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if self._drag_start is not None and event.button() == Qt.MouseButton.LeftButton:
+            region = self._region_from_points(
+                self._drag_start, self.mapToScene(event.position().toPoint())
+            )
+            self._drag_start = None
+            if region is not None:
+                self.set_selected_region(region)
+                self.region_finished.emit(region)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def _region_from_points(self, first: QPointF, second: QPointF) -> RectangularRegion | None:
+        if self._asset is None:
+            return None
+        x1 = max(0.0, min(float(self._asset.width), first.x()))
+        y1 = max(0.0, min(float(self._asset.height), first.y()))
+        x2 = max(0.0, min(float(self._asset.width), second.x()))
+        y2 = max(0.0, min(float(self._asset.height), second.y()))
+        left, top = math.floor(min(x1, x2)), math.floor(min(y1, y2))
+        right, bottom = math.ceil(max(x1, x2)), math.ceil(max(y1, y2))
+        if right <= left or bottom <= top:
+            return None
+        return RectangularRegion(left, top, right - left, bottom - top)
 
     def leaveEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         self.pixel_left.emit()
@@ -147,7 +259,11 @@ class ImageCanvas(QGraphicsView):
     def keyReleaseEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Space and not event.isAutoRepeat():
             self._space_pressed = False
-            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            self.setDragMode(
+                QGraphicsView.DragMode.NoDrag
+                if self._interaction_mode is CanvasInteractionMode.RECTANGLE_SELECTION
+                else QGraphicsView.DragMode.ScrollHandDrag
+            )
             event.accept()
             return
         super().keyReleaseEvent(event)

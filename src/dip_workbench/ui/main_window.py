@@ -23,9 +23,12 @@ from dip_workbench.core import (
     ImageAsset,
     InputValidationError,
     OperationExecutionError,
+    RectangularRegion,
     UnsupportedImageError,
 )
-from dip_workbench.services import SettingsService
+from dip_workbench.services import (
+    SettingsService,
+)
 from dip_workbench.ui.pages import HomePage, OperationWorkspace, ReportBuilderPage
 from dip_workbench.ui.panels import NavigationSidebar, ParameterPanel, WorkbenchStatusBar
 
@@ -143,6 +146,11 @@ class MainWindow(QMainWindow):
         self._add_action("redo", "Redo", shortcut="Ctrl+Y")
         self._add_action("reset", "Reset Current Image")
         self._add_action("clear_preview", "Clear Operation Preview")
+        self._add_action("crop", "Crop…")
+        self._add_action("resize", "Resize…")
+        self._add_action("rotate", "Rotate…")
+        self._add_action("flip", "Flip/Mirror…")
+        self._add_action("select_region", "Select Region")
         self._add_action("fit", "Fit Image", shortcut="F")
         self._add_action("actual_size", "Actual Size", shortcut="1")
         self._add_action("zoom_in", "Zoom In")
@@ -171,7 +179,20 @@ class MainWindow(QMainWindow):
                 "File",
                 ("open", "sample", "save", "export_result", "report", "export_report", "exit"),
             ),
-            ("Edit", ("undo", "redo", "reset", "clear_preview")),
+            (
+                "Edit",
+                (
+                    "undo",
+                    "redo",
+                    "reset",
+                    "clear_preview",
+                    "crop",
+                    "resize",
+                    "rotate",
+                    "flip",
+                    "select_region",
+                ),
+            ),
             (
                 "View",
                 (
@@ -227,10 +248,45 @@ class MainWindow(QMainWindow):
         canvas.pixel_hovered.connect(self._show_pixel_status)
         canvas.pixel_left.connect(self.workbench_status_bar.clear_pixel_status)
         canvas.file_dropped.connect(self.open_primary_image_path)
+        canvas.region_changed.connect(self._region_changed)
+        canvas.region_finished.connect(self._region_finished)
+        for key in ("crop", "resize", "rotate", "flip", "select_region"):
+            self.action_map[key].triggered.connect(
+                lambda checked=False, mode=key: self.open_utility(mode)
+            )
+        utility = self.parameter_panel.utility_panel
+        utility.select_region_requested.connect(self.begin_region_selection)
+        utility.clear_region_requested.connect(self.clear_region_selection)
+        utility.finish_region_requested.connect(canvas.cancel_interaction)
+        utility.cancel_utility_requested.connect(self.cancel_utility)
+        utility.preview_crop_requested.connect(
+            lambda: self._preview_transform(self.document_controller.preview_crop)
+        )
+        utility.preview_resize_requested.connect(
+            lambda w, h, i: self._preview_transform(
+                self.document_controller.preview_resize, width=w, height=h, interpolation=i
+            )
+        )
+        utility.preview_rotate_requested.connect(
+            lambda a, c, i: self._preview_transform(
+                self.document_controller.preview_rotate,
+                angle_degrees=a,
+                canvas_mode=c,
+                interpolation=i,
+            )
+        )
+        utility.preview_flip_requested.connect(
+            lambda d: self._preview_transform(self.document_controller.preview_flip, direction=d)
+        )
+        utility.apply_preview_requested.connect(self.apply_utility_preview)
+        utility.clear_preview_requested.connect(self.clear_utility_preview)
+        self.action_map["clear_preview"].triggered.connect(self.clear_utility_preview)
 
     def refresh_document_actions(self) -> None:
         active = self.document_controller.has_document
         for key in ("save", "reset", "fit", "actual_size", "zoom_in", "zoom_out"):
+            self.action_map[key].setEnabled(active)
+        for key in ("crop", "resize", "rotate", "flip", "select_region"):
             self.action_map[key].setEnabled(active)
         self.action_map["undo"].setEnabled(self.document_controller.can_undo)
         self.action_map["redo"].setEnabled(self.document_controller.can_redo)
@@ -269,6 +325,7 @@ class MainWindow(QMainWindow):
         self._display_document(asset, fit=True)
         self.setWindowTitle(f"DIP Workbench — {candidate.name}")
         self.show_operation_workspace()
+        self.parameter_panel.show_placeholder()
         return True
 
     def save_current_image_dialog(self) -> None:
@@ -341,9 +398,76 @@ class MainWindow(QMainWindow):
         self.refresh_document_actions()
 
     def _show_pixel_status(self, x: int, y: int, value: object) -> None:
-        asset = self.document_controller.current_image
+        asset = self.operation_workspace.image_canvas.current_asset
         if asset is not None:
             self.workbench_status_bar.set_pixel_status(x, y, value, asset.colour_model)
+
+    def open_utility(self, mode: str) -> None:
+        asset = self.document_controller.current_image
+        if asset is None:
+            return
+        self.parameter_panel.utility_panel.configure(
+            mode, asset, self.document_controller.selected_region
+        )
+        self.parameter_panel.show_utility_panel()
+        if mode in {"crop", "select_region"} and self.document_controller.selected_region is None:
+            self.begin_region_selection()
+
+    def begin_region_selection(self) -> None:
+        self.operation_workspace.image_canvas.begin_rectangle_selection(
+            self.document_controller.selected_region
+        )
+
+    def _region_changed(self, region: object) -> None:
+        if isinstance(region, RectangularRegion):
+            self.parameter_panel.utility_panel.set_region(region)
+
+    def _region_finished(self, region: object) -> None:
+        if isinstance(region, RectangularRegion):
+            self.document_controller.set_selected_region(region)
+            self.parameter_panel.utility_panel.set_region(region)
+
+    def clear_region_selection(self) -> None:
+        self.document_controller.clear_selected_region()
+        self.operation_workspace.image_canvas.clear_region_selection()
+        self.parameter_panel.utility_panel.set_region(None)
+
+    def _preview_transform(self, callback, **kwargs) -> None:  # type: ignore[no-untyped-def]
+        try:
+            preview = callback(**kwargs)
+        except (InputValidationError, OperationExecutionError) as error:
+            QMessageBox.warning(self, "Could Not Transform Image", str(error))
+            return
+        operation_name = str(preview.metadata["utility_operation_name"])
+        self.operation_workspace.set_preview_image(preview, operation_name)
+        self.workbench_status_bar.set_preview_image_status(preview)
+        self.parameter_panel.utility_panel.set_preview_available(True)
+        self.refresh_document_actions()
+
+    def apply_utility_preview(self) -> None:
+        try:
+            asset = self.document_controller.apply_active_preview()
+        except (InputValidationError, OperationExecutionError) as error:
+            QMessageBox.warning(self, "Could Not Transform Image", str(error))
+            return
+        self.operation_workspace.image_canvas.cancel_interaction()
+        self.operation_workspace.image_canvas.clear_region_selection()
+        self.parameter_panel.utility_panel.set_preview_available(False)
+        self._display_document(asset, fit=True)
+
+    def clear_utility_preview(self) -> None:
+        self.document_controller.clear_active_preview()
+        current = self.document_controller.current_image
+        if current is not None:
+            self.operation_workspace.show_current_image(current)
+            self.workbench_status_bar.set_image_status(current)
+        self.parameter_panel.utility_panel.set_preview_available(False)
+        self.refresh_document_actions()
+
+    def cancel_utility(self) -> None:
+        self.clear_utility_preview()
+        self.operation_workspace.image_canvas.cancel_interaction()
+        self.parameter_panel.show_placeholder()
 
     def _confirm_replacement(self) -> bool:
         answer = QMessageBox.question(

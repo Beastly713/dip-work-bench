@@ -23,6 +23,7 @@ class FakeContext:
         self.logging = FakeLogging()
         self.settings = object()
         self.image_io = object()
+        self.image_transforms = object()
         self.document_store = object()
         self.closed = False
 

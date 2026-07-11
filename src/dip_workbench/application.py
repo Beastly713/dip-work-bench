@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from dip_workbench.controllers import DocumentController
 from dip_workbench.services import (
     ImageIOService,
+    ImageTransformService,
     LoggingService,
     SettingsService,
     TemporaryDirectoryManager,
@@ -43,6 +44,7 @@ class ApplicationContext:
     settings: SettingsService
     temporary_directories: TemporaryDirectoryManager
     image_io: ImageIOService
+    image_transforms: ImageTransformService
     document_store: DocumentStore
     _closed: bool = field(default=False, init=False, repr=False)
 
@@ -83,6 +85,7 @@ def build_application_context(
         settings_service = SettingsService(settings)
         temporary_directories = TemporaryDirectoryManager(temporary_base_directory)
         image_io = ImageIOService()
+        image_transforms = ImageTransformService()
         snapshot_store = HistorySnapshotStore(
             temporary_directories.create_subdirectory("history"), image_io
         )
@@ -92,6 +95,7 @@ def build_application_context(
             settings_service,
             temporary_directories,
             image_io,
+            image_transforms,
             document_store,
         )
     except Exception:
@@ -124,7 +128,7 @@ def run_application(application: QApplication, context: ApplicationContext) -> i
     try:
         window = MainWindow(
             context.settings,
-            DocumentController(context.image_io, context.document_store),
+            DocumentController(context.image_io, context.image_transforms, context.document_store),
         )
         window.show()
         return application.exec()

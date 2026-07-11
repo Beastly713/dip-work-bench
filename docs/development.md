@@ -59,6 +59,11 @@ Undo/Redo. PNG, JPEG, BMP, and TIFF files can be opened or dropped, while the st
 image and pixel information. Sample images and academic operations remain unavailable. C06 adds
 editing utilities and reusable ROI selection.
 
+C06 adds non-destructive Crop, Resize, Rotate, and Flip/Mirror previews. Applying a preview creates
+normal undoable history. Resize exposes aspect locking and interpolation, rotation offers Expanded
+and Cropped canvas modes, and reusable rectangular ROI selection maps to full-resolution image
+coordinates without changing Current Result. C07 introduces operation and artifact contracts.
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash

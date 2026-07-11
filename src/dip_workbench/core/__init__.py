@@ -10,6 +10,7 @@ from dip_workbench.core.errors import (
     UnsupportedImageError,
     ValidationError,
 )
+from dip_workbench.core.geometry import RectangularRegion
 from dip_workbench.core.image import ColourModel, FloatingImage, ImageAsset
 from dip_workbench.core.image_conversion import (
     bgr_to_rgb,
@@ -33,6 +34,7 @@ __all__ = [
     "InputValidationError",
     "OperationExecutionError",
     "ParameterValidationError",
+    "RectangularRegion",
     "UnsupportedImageError",
     "ValidationError",
     "bgr_to_rgb",
