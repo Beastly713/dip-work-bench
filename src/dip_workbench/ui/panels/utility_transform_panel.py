@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QSpinBox,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -72,7 +73,6 @@ class UtilityTransformPanel(QWidget):
         )
         form.addRow(self.rotate_180_button)
         form.addRow("Region", self.region_label)
-        layout.addLayout(form)
         self.select_region_button = QPushButton("Select/Reselect Region")
         self.clear_region_button = QPushButton("Clear Region")
         self.preview_button = QPushButton("Preview")
@@ -80,16 +80,64 @@ class UtilityTransformPanel(QWidget):
         self.clear_preview_button = QPushButton("Clear Preview")
         self.finish_button = QPushButton("Finish Region")
         self.cancel_button = QPushButton("Cancel")
-        for button in (
-            self.select_region_button,
-            self.clear_region_button,
-            self.preview_button,
-            self.apply_button,
-            self.clear_preview_button,
-            self.finish_button,
-            self.cancel_button,
+        self.mode_stack = QStackedWidget()
+        self._mode_indices: dict[str, int] = {}
+        crop_page = QWidget()
+        crop_layout = QVBoxLayout(crop_page)
+        crop_layout.addWidget(self.region_label)
+        crop_layout.addWidget(self.select_region_button)
+        crop_layout.addWidget(self.clear_region_button)
+        crop_layout.addWidget(self.preview_button)
+        self._mode_indices["crop"] = self.mode_stack.addWidget(crop_page)
+        resize_page = QWidget()
+        resize_form = QFormLayout(resize_page)
+        resize_form.addRow("Width", self.width_spin)
+        resize_form.addRow("Height", self.height_spin)
+        resize_form.addRow(self.aspect_lock)
+        self.resize_interpolation_combo = self.interpolation_combo
+        resize_form.addRow("Interpolation", self.resize_interpolation_combo)
+        self.resize_preview_button = QPushButton("Preview Resize")
+        resize_form.addRow(self.resize_preview_button)
+        self._mode_indices["resize"] = self.mode_stack.addWidget(resize_page)
+        rotate_page = QWidget()
+        rotate_form = QFormLayout(rotate_page)
+        rotate_form.addRow("Angle", self.angle_spin)
+        rotate_form.addRow(self.rotate_minus_90_button, self.rotate_plus_90_button)
+        rotate_form.addRow(self.rotate_180_button)
+        rotate_form.addRow("Canvas", self.canvas_combo)
+        self.rotation_interpolation_combo = QComboBox()
+        for interpolation in (
+            InterpolationMode.NEAREST,
+            InterpolationMode.LINEAR,
+            InterpolationMode.CUBIC,
         ):
-            layout.addWidget(button)
+            self.rotation_interpolation_combo.addItem(interpolation.value.title(), interpolation)
+        rotate_form.addRow("Interpolation", self.rotation_interpolation_combo)
+        self.rotate_preview_button = QPushButton("Preview Rotate")
+        rotate_form.addRow(self.rotate_preview_button)
+        self._mode_indices["rotate"] = self.mode_stack.addWidget(rotate_page)
+        flip_page = QWidget()
+        flip_layout = QFormLayout(flip_page)
+        flip_layout.addRow("Direction", self.flip_combo)
+        self.flip_preview_button = QPushButton("Preview Flip")
+        flip_layout.addRow(self.flip_preview_button)
+        self._mode_indices["flip"] = self.mode_stack.addWidget(flip_page)
+        region_page = QWidget()
+        region_layout = QVBoxLayout(region_page)
+        self.region_instructions = QLabel("Drag on the image to select a reusable region.")
+        self.region_page_label = QLabel("No region selected")
+        region_layout.addWidget(self.region_instructions)
+        region_layout.addWidget(self.region_page_label)
+        self.region_select_button = QPushButton("Select/Reselect")
+        self.region_clear_button = QPushButton("Clear")
+        region_layout.addWidget(self.region_select_button)
+        region_layout.addWidget(self.region_clear_button)
+        region_layout.addWidget(self.finish_button)
+        self._mode_indices["select_region"] = self.mode_stack.addWidget(region_page)
+        layout.addWidget(self.mode_stack)
+        layout.addWidget(self.apply_button)
+        layout.addWidget(self.clear_preview_button)
+        layout.addWidget(self.cancel_button)
         layout.addStretch()
         self.mode = "crop"
         self._ratio = 1.0
@@ -101,6 +149,11 @@ class UtilityTransformPanel(QWidget):
         self.finish_button.clicked.connect(self.finish_region_requested)
         self.cancel_button.clicked.connect(self.cancel_utility_requested)
         self.preview_button.clicked.connect(self._emit_preview)
+        self.resize_preview_button.clicked.connect(self._emit_preview)
+        self.rotate_preview_button.clicked.connect(self._emit_preview)
+        self.flip_preview_button.clicked.connect(self._emit_preview)
+        self.region_select_button.clicked.connect(self.select_region_requested)
+        self.region_clear_button.clicked.connect(self.clear_region_requested)
         self.rotate_minus_90_button.clicked.connect(lambda: self.angle_spin.setValue(-90))
         self.rotate_plus_90_button.clicked.connect(lambda: self.angle_spin.setValue(90))
         self.rotate_180_button.clicked.connect(lambda: self.angle_spin.setValue(180))
@@ -110,6 +163,7 @@ class UtilityTransformPanel(QWidget):
 
     def configure(self, mode: str, asset: ImageAsset, region: RectangularRegion | None) -> None:
         self.mode = mode
+        self.mode_stack.setCurrentIndex(self._mode_indices[mode])
         self.heading.setText(mode.replace("_", " ").title())
         self._ratio = asset.width / asset.height
         self._updating = True
@@ -117,8 +171,11 @@ class UtilityTransformPanel(QWidget):
         self.height_spin.setValue(asset.height)
         self._updating = False
         binary = asset.colour_model is ColourModel.BINARY
-        self.interpolation_combo.setCurrentIndex(0 if binary else 1)
-        self.interpolation_combo.setEnabled(not binary)
+        for combo in (self.resize_interpolation_combo, self.rotation_interpolation_combo):
+            combo.setCurrentIndex(0 if binary else 1)
+            combo.setEnabled(not binary)
+        self.apply_button.setVisible(mode != "select_region")
+        self.clear_preview_button.setVisible(mode != "select_region")
         self.set_region(region)
         self.set_preview_available(False)
 
@@ -128,6 +185,7 @@ class UtilityTransformPanel(QWidget):
             if region is None
             else f"x={region.x}, y={region.y}, {region.width} × {region.height}"  # noqa: RUF001
         )
+        self.region_page_label.setText(self.region_label.text())
         if self.mode == "crop":
             self.preview_button.setEnabled(region is not None)
 
@@ -142,13 +200,13 @@ class UtilityTransformPanel(QWidget):
             self.preview_resize_requested.emit(
                 self.width_spin.value(),
                 self.height_spin.value(),
-                self.interpolation_combo.currentData(),
+                self.resize_interpolation_combo.currentData(),
             )
         elif self.mode == "rotate":
             self.preview_rotate_requested.emit(
                 self.angle_spin.value(),
                 self.canvas_combo.currentData(),
-                self.interpolation_combo.currentData(),
+                self.rotation_interpolation_combo.currentData(),
             )
         elif self.mode == "flip":
             self.preview_flip_requested.emit(self.flip_combo.currentData())

@@ -7,7 +7,7 @@ import pytest
 
 from dip_workbench.controllers import DocumentController
 from dip_workbench.core import ColourModel, ImageAsset, InputValidationError, UnsupportedImageError
-from dip_workbench.services import ImageIOService
+from dip_workbench.services import ImageIOService, ImageTransformService
 from dip_workbench.state import DocumentStore, HistorySnapshotStore
 
 
@@ -15,7 +15,11 @@ def setup_controller(tmp_path: Path) -> DocumentController:
     history = tmp_path / "history"
     history.mkdir()
     image_io = ImageIOService()
-    return DocumentController(image_io, DocumentStore(HistorySnapshotStore(history, image_io)))
+    return DocumentController(
+        image_io,
+        ImageTransformService(),
+        DocumentStore(HistorySnapshotStore(history, image_io)),
+    )
 
 
 def source(value: int = 10) -> ImageAsset:

@@ -11,7 +11,7 @@ from dip_workbench.services import (
     ImageTransformService,
     InterpolationMode,
 )
-from dip_workbench.state import DocumentStore, HistorySnapshotStore
+from dip_workbench.state import ActivePreview, DocumentStore, HistorySnapshotStore
 
 
 def controller(tmp_path: Path) -> DocumentController:
@@ -53,3 +53,14 @@ def test_resize_preview_clear_and_apply_without_preview(tmp_path: Path) -> None:
     ctrl.clear_active_preview()
     with pytest.raises(InputValidationError):
         ctrl.apply_active_preview()
+
+
+def test_unsupported_preview_is_rejected_without_history(tmp_path: Path) -> None:
+    ctrl = controller(tmp_path)
+    current = ctrl.current_image
+    assert current is not None
+    ctrl.document_store.set_active_preview(ActivePreview("X-01", (current.id,), {}, {}, current, 0))
+    with pytest.raises(InputValidationError, match="supported"):
+        ctrl.apply_active_preview()
+    assert ctrl.current_image is current
+    assert not ctrl.document_store.history

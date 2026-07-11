@@ -17,18 +17,12 @@ class DocumentController:
     def __init__(
         self,
         image_io: ImageIOService,
-        image_transforms: ImageTransformService | DocumentStore,
-        document_store: DocumentStore | None = None,
+        image_transforms: ImageTransformService,
+        document_store: DocumentStore,
     ) -> None:
         self.image_io = image_io
-        if isinstance(image_transforms, DocumentStore):
-            self.image_transforms = ImageTransformService()
-            self.document_store = image_transforms
-        else:
-            if document_store is None:
-                raise InputValidationError("Document store is required.")
-            self.image_transforms = image_transforms
-            self.document_store = document_store
+        self.image_transforms = image_transforms
+        self.document_store = document_store
         self._preview_generation = 0
 
     @property
@@ -153,6 +147,8 @@ class DocumentController:
         if preview.input_asset_ids != (current.id,):
             raise InputValidationError("The utility preview is stale.")
         names = {"U-05": "Crop", "U-06": "Resize", "U-07": "Rotate", "U-08": "Flip/Mirror"}
+        if preview.operation_id not in names:
+            raise InputValidationError("The active preview is not a supported image utility.")
         result = self.document_store.apply_image(
             preview.result,
             operation_id=preview.operation_id,

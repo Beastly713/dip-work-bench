@@ -325,6 +325,7 @@ class MainWindow(QMainWindow):
         self._display_document(asset, fit=True)
         self.setWindowTitle(f"DIP Workbench — {candidate.name}")
         self.show_operation_workspace()
+        self.parameter_panel.utility_panel.set_preview_available(False)
         self.parameter_panel.show_placeholder()
         return True
 
@@ -383,9 +384,17 @@ class MainWindow(QMainWindow):
 
     def _run_history_action(self, action) -> None:  # type: ignore[no-untyped-def]
         try:
-            self._display_document(action(), fit=False)
+            restored = action()
         except (InputValidationError, OperationExecutionError):
             return
+        self.document_controller.clear_active_preview()
+        self.document_controller.clear_selected_region()
+        canvas = self.operation_workspace.image_canvas
+        canvas.clear_region_selection()
+        canvas.cancel_interaction()
+        self.parameter_panel.utility_panel.set_preview_available(False)
+        self.parameter_panel.show_placeholder()
+        self._display_document(restored, fit=False)
 
     def _display_document(self, asset: ImageAsset, *, fit: bool) -> None:
         old = self.operation_workspace.image_canvas.current_asset
@@ -406,12 +415,16 @@ class MainWindow(QMainWindow):
         asset = self.document_controller.current_image
         if asset is None:
             return
+        if self.document_controller.document_store.active_preview is not None:
+            self.clear_utility_preview()
         self.parameter_panel.utility_panel.configure(
             mode, asset, self.document_controller.selected_region
         )
         self.parameter_panel.show_utility_panel()
-        if mode in {"crop", "select_region"} and self.document_controller.selected_region is None:
+        if mode in {"crop", "select_region"}:
             self.begin_region_selection()
+        else:
+            self.operation_workspace.image_canvas.cancel_interaction()
 
     def begin_region_selection(self) -> None:
         self.operation_workspace.image_canvas.begin_rectangle_selection(
@@ -461,12 +474,25 @@ class MainWindow(QMainWindow):
         if current is not None:
             self.operation_workspace.show_current_image(current)
             self.workbench_status_bar.set_image_status(current)
+            region = self.document_controller.selected_region
+            if region is not None and region.fits_within(current.width, current.height):
+                self.operation_workspace.image_canvas.set_selected_region(region)
+            if self.parameter_panel.utility_panel.mode in {"crop", "select_region"}:
+                self.operation_workspace.image_canvas.begin_rectangle_selection(region)
         self.parameter_panel.utility_panel.set_preview_available(False)
         self.refresh_document_actions()
 
     def cancel_utility(self) -> None:
         self.clear_utility_preview()
         self.operation_workspace.image_canvas.cancel_interaction()
+        current = self.document_controller.current_image
+        region = self.document_controller.selected_region
+        if (
+            current is not None
+            and region is not None
+            and region.fits_within(current.width, current.height)
+        ):
+            self.operation_workspace.image_canvas.set_selected_region(region)
         self.parameter_panel.show_placeholder()
 
     def _confirm_replacement(self) -> bool:

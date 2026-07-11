@@ -1,7 +1,8 @@
 import numpy as np
+import pytest
 from PySide6.QtCore import Qt
 
-from dip_workbench.core import ColourModel, ImageAsset, RectangularRegion
+from dip_workbench.core import ColourModel, ImageAsset, InputValidationError, RectangularRegion
 from dip_workbench.ui.widgets import CanvasInteractionMode, ImageCanvas
 
 
@@ -44,3 +45,21 @@ def test_programmatic_region_removed_on_image_replace(qtbot) -> None:  # type: i
     assert canvas.selected_region is not None
     canvas.set_image(asset)
     assert canvas.selected_region is None
+    assert canvas.interaction_mode is CanvasInteractionMode.PAN
+    canvas.clear_region_selection()
+    canvas.begin_rectangle_selection(RectangularRegion(1, 1, 2, 2))
+    canvas.clear_image()
+    assert canvas.selected_region is None
+    assert canvas.interaction_mode is CanvasInteractionMode.PAN
+    canvas.clear_region_selection()
+    canvas.clear_region_selection()
+
+
+def test_invalid_programmatic_region_uses_typed_error(qtbot) -> None:  # type: ignore[no-untyped-def]
+    canvas = ImageCanvas()
+    qtbot.addWidget(canvas)
+    canvas.set_image(
+        ImageAsset(name="a", data=np.zeros((10, 10), dtype=np.uint8), colour_model=ColourModel.GRAY)
+    )
+    with pytest.raises(InputValidationError):
+        canvas.set_selected_region(RectangularRegion(9, 9, 2, 2))

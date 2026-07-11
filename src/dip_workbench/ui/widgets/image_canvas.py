@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from dip_workbench.core import ColourModel, ImageAsset, RectangularRegion
+from dip_workbench.core import ColourModel, ImageAsset, InputValidationError, RectangularRegion
 from dip_workbench.ui.image_qt import image_asset_to_qimage
 
 
@@ -91,8 +91,7 @@ class ImageCanvas(QGraphicsView):
     def set_image(self, asset: ImageAsset) -> None:
         pixmap = QPixmap.fromImage(image_asset_to_qimage(asset))
         self._scene.clear()
-        self._selection_item = None
-        self._selected_region = None
+        self._reset_interaction_state()
         self._pixmap_item = self._scene.addPixmap(pixmap)
         self._pixmap_item.setPos(0, 0)
         self._scene.setSceneRect(0, 0, asset.width, asset.height)
@@ -101,11 +100,21 @@ class ImageCanvas(QGraphicsView):
 
     def clear_image(self) -> None:
         self._scene.clear()
+        self._reset_interaction_state()
         self._pixmap_item = None
         self._asset = None
         self._fit_mode = False
         self.resetTransform()
+        self._scene.setSceneRect(0, 0, 0, 0)
         self.pixel_left.emit()
+
+    def _reset_interaction_state(self) -> None:
+        self._drag_start = None
+        self._selected_region = None
+        self._selection_item = None
+        self._space_pressed = False
+        self._interaction_mode = CanvasInteractionMode.PAN
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
     def begin_rectangle_selection(self, region: RectangularRegion | None = None) -> None:
         self._interaction_mode = CanvasInteractionMode.RECTANGLE_SELECTION
@@ -116,7 +125,7 @@ class ImageCanvas(QGraphicsView):
         if region is not None and (
             self._asset is None or not region.fits_within(self._asset.width, self._asset.height)
         ):
-            raise ValueError("Region does not fit the displayed image.")
+            raise InputValidationError("Region does not fit the displayed image.")
         self.clear_region_selection()
         self._selected_region = region
         if region is not None:
