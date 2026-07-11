@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import QCoreApplication, QSettings, QStandardPaths
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from dip_workbench.controllers import DocumentController
 from dip_workbench.services import (
     ImageIOService,
     LoggingService,
@@ -121,7 +122,10 @@ def _show_startup_error() -> None:
 def run_application(application: QApplication, context: ApplicationContext) -> int:
     """Construct, show, and execute the single-window application."""
     try:
-        window = MainWindow(context.settings)
+        window = MainWindow(
+            context.settings,
+            DocumentController(context.image_io, context.document_store),
+        )
         window.show()
         return application.exec()
     except Exception:

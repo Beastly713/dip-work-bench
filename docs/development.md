@@ -54,6 +54,11 @@ Current Result, and applied states use disk-backed lossless PNG undo/redo histor
 entries. Temporary history is cleaned on normal shutdown, while abandoned marked sessions are
 cleaned on a later launch. C05 will connect this state to the desktop workflow.
 
+C05 provides the functional primary-image workflow: Open → Inspect → Zoom/Pan → Save → Reset →
+Undo/Redo. PNG, JPEG, BMP, and TIFF files can be opened or dropped, while the status bar reports
+image and pixel information. Sample images and academic operations remain unavailable. C06 adds
+editing utilities and reusable ROI selection.
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash

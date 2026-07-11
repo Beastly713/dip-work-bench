@@ -1,7 +1,9 @@
 """DIP Workbench home page."""
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+
+from dip_workbench.core import ImageAsset
 
 
 class HomePage(QWidget):
@@ -24,7 +26,7 @@ class HomePage(QWidget):
         buttons = QHBoxLayout()
         self.open_image_button = QPushButton("Open Image")
         self.sample_image_button = QPushButton("Use Sample Image")
-        self.open_image_button.setEnabled(False)
+        self.open_image_button.clicked.connect(self.open_image_requested)
         self.sample_image_button.setEnabled(False)
         buttons.addWidget(self.open_image_button)
         buttons.addWidget(self.sample_image_button)
@@ -38,7 +40,7 @@ class HomePage(QWidget):
             "border-radius: 6px; }"
         )
         drop_layout = QVBoxLayout(drop_area)
-        drop_label = QLabel("Drag and drop will be available in a later step")
+        drop_label = QLabel("Drag and Drop Image Here")
         drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         drop_label.setStyleSheet("color: #d1d5db; font-size: 15px;")
         drop_layout.addWidget(drop_label)
@@ -53,3 +55,25 @@ class HomePage(QWidget):
         layout.addLayout(buttons)
         layout.addWidget(drop_area, 1)
         layout.addWidget(empty_message)
+
+        self.current_document = QFrame()
+        current_layout = QHBoxLayout(self.current_document)
+        self.current_document_label = QLabel()
+        self.continue_button = QPushButton("Continue with Current Image")
+        self.continue_button.clicked.connect(self.continue_requested)
+        current_layout.addWidget(self.current_document_label, 1)
+        current_layout.addWidget(self.continue_button)
+        self.current_document.hide()
+        layout.addWidget(self.current_document)
+
+    def set_current_document(self, asset: "ImageAsset | None") -> None:
+        if asset is None:
+            self.current_document.hide()
+            return
+        self.current_document_label.setText(
+            f"{asset.name} — {asset.width} × {asset.height} • {asset.colour_model.value}"  # noqa: RUF001
+        )
+        self.current_document.show()
+
+    open_image_requested = Signal()
+    continue_requested = Signal()

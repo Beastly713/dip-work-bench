@@ -51,6 +51,14 @@ and non-destructive previews. Applied states use lossless temporary PNG snapshot
 redo, limited to the newest 25 applied states. This state is not connected to the GUI yet; C05
 will provide the primary image workflow and canvas.
 
+## Primary image workflow
+
+C05 connects the desktop shell to document state. Users can open or drop PNG, JPEG, BMP, and TIFF
+images, inspect image and pixel information, fit or view at actual size, zoom and pan, save Current
+Result, and use reset/undo/redo. The manual flow is: Open → Inspect → Zoom/Pan → Save → Reset →
+Undo/Redo. Sample images and academic operations remain unavailable; C06 adds editing utilities
+and reusable ROI selection.
+
 ## Architecture principles
 
 The project uses a Python 3.11 `src` layout, explicit dependency injection, typed application

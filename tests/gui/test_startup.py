@@ -22,6 +22,8 @@ class FakeContext:
     def __init__(self) -> None:
         self.logging = FakeLogging()
         self.settings = object()
+        self.image_io = object()
+        self.document_store = object()
         self.closed = False
 
     def close(self) -> None:
@@ -31,8 +33,9 @@ class FakeContext:
 class FakeWindow:
     shown = False
 
-    def __init__(self, settings: object) -> None:
+    def __init__(self, settings: object, controller: object) -> None:
         assert settings is not None
+        assert controller is not None
 
     def show(self) -> None:
         type(self).shown = True

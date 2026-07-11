@@ -6,13 +6,21 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QSettings
 
-from dip_workbench.services import SettingsService
+from dip_workbench.controllers import DocumentController
+from dip_workbench.services import ImageIOService, SettingsService
+from dip_workbench.state import DocumentStore, HistorySnapshotStore
 from dip_workbench.ui.main_window import MainWindow, PageIndex
 
 
 def make_window(qtbot, tmp_path) -> MainWindow:  # type: ignore[no-untyped-def]
     backend = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
-    window = MainWindow(SettingsService(backend))
+    image_io = ImageIOService()
+    history = tmp_path / "history"
+    history.mkdir(exist_ok=True)
+    controller = DocumentController(
+        image_io, DocumentStore(HistorySnapshotStore(history, image_io))
+    )
+    window = MainWindow(SettingsService(backend), controller)
     qtbot.addWidget(window)
     window.show()
     return window
@@ -56,7 +64,7 @@ def test_main_window_structure_and_navigation(qtbot, tmp_path) -> None:  # type:
 
 def test_action_availability_and_panel_constraints(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
     window = make_window(qtbot, tmp_path)
-    enabled = {"home", "report", "exit", "show_navigation", "show_parameters"}
+    enabled = {"home", "open", "report", "exit", "show_navigation", "show_parameters"}
     for key, action in window.action_map.items():
         assert action.isEnabled() is (key in enabled)
     assert window.navigation_sidebar.minimumWidth() == 220
@@ -82,7 +90,13 @@ def test_panels_hide_and_restore_usable_widths(qtbot, tmp_path) -> None:  # type
 def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
     settings_path = tmp_path / "settings.ini"
     first_backend = QSettings(str(settings_path), QSettings.Format.IniFormat)
-    first = MainWindow(SettingsService(first_backend))
+    image_io = ImageIOService()
+    history = tmp_path / "history-first"
+    history.mkdir()
+    first = MainWindow(
+        SettingsService(first_backend),
+        DocumentController(image_io, DocumentStore(HistorySnapshotStore(history, image_io))),
+    )
     qtbot.addWidget(first)
     first.show()
     first.resize(1250, 760)
@@ -90,7 +104,12 @@ def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ig
     first.close()
 
     second_backend = QSettings(str(settings_path), QSettings.Format.IniFormat)
-    second = MainWindow(SettingsService(second_backend))
+    second_history = tmp_path / "history-second"
+    second_history.mkdir()
+    second = MainWindow(
+        SettingsService(second_backend),
+        DocumentController(image_io, DocumentStore(HistorySnapshotStore(second_history, image_io))),
+    )
     qtbot.addWidget(second)
     second.show()
     assert second.size().width() >= 1180
@@ -105,7 +124,13 @@ def test_corrupt_settings_fall_back_safely(qtbot, tmp_path) -> None:  # type: ig
     backend.setValue("layout/navigation_width", -4)
     backend.setValue("layout/parameter_width", "invalid")
     backend.setValue("window/geometry", "not geometry")
-    window = MainWindow(SettingsService(backend))
+    image_io = ImageIOService()
+    history = tmp_path / "history-corrupt"
+    history.mkdir()
+    window = MainWindow(
+        SettingsService(backend),
+        DocumentController(image_io, DocumentStore(HistorySnapshotStore(history, image_io))),
+    )
     qtbot.addWidget(window)
     assert window._navigation_width == 270
     assert window._parameter_width == 320

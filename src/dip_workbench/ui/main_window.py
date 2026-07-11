@@ -1,11 +1,30 @@
 """Single-window desktop application shell."""
 
+import logging
 from enum import IntEnum
+from pathlib import Path
 
 from PySide6.QtCore import QByteArray, QSize, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
-from PySide6.QtWidgets import QMainWindow, QMenu, QSplitter, QStackedWidget, QToolBar, QWidget
+from PySide6.QtGui import QAction, QCloseEvent, QDragEnterEvent, QDropEvent, QKeySequence
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QSplitter,
+    QStackedWidget,
+    QToolBar,
+    QWidget,
+)
 
+from dip_workbench.controllers import DocumentController
+from dip_workbench.core import (
+    ExportError,
+    ImageAsset,
+    InputValidationError,
+    OperationExecutionError,
+    UnsupportedImageError,
+)
 from dip_workbench.services import SettingsService
 from dip_workbench.ui.pages import HomePage, OperationWorkspace, ReportBuilderPage
 from dip_workbench.ui.panels import NavigationSidebar, ParameterPanel, WorkbenchStatusBar
@@ -25,13 +44,20 @@ class MainWindow(QMainWindow):
     DEFAULT_NAVIGATION_WIDTH = 270
     DEFAULT_PARAMETER_WIDTH = 320
 
-    def __init__(self, settings: SettingsService, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        settings: SettingsService,
+        document_controller: DocumentController,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.settings = settings
+        self.document_controller = document_controller
         self.action_map: dict[str, QAction] = {}
         self.setWindowTitle("DIP Workbench")
         self.setMinimumSize(self.MINIMUM_SIZE)
         self.resize(self.DEFAULT_SIZE)
+        self.setAcceptDrops(True)
 
         self.page_stack = QStackedWidget()
         self.home_page = HomePage()
@@ -71,8 +97,10 @@ class MainWindow(QMainWindow):
         self._create_toolbar()
         self.workbench_status_bar = WorkbenchStatusBar()
         self.setStatusBar(self.workbench_status_bar)
+        self._connect_document_workflow()
         self._restore_geometry()
         self.show_home_page()
+        self.refresh_document_actions()
 
     def show_home_page(self) -> None:
         self.page_stack.setCurrentIndex(PageIndex.HOME)
@@ -102,7 +130,7 @@ class MainWindow(QMainWindow):
 
     def _create_actions(self) -> None:
         self._add_action("home", "Home", enabled=True).triggered.connect(self.show_home_page)
-        self._add_action("open", "Open Primary Image", shortcut="Ctrl+O")
+        self._add_action("open", "Open Primary Image", enabled=True, shortcut="Ctrl+O")
         self._add_action("sample", "Open Sample Image")
         self._add_action("save", "Save Current Image", shortcut="Ctrl+S")
         self._add_action("export_result", "Export Displayed Result")
@@ -115,8 +143,8 @@ class MainWindow(QMainWindow):
         self._add_action("redo", "Redo", shortcut="Ctrl+Y")
         self._add_action("reset", "Reset Current Image")
         self._add_action("clear_preview", "Clear Operation Preview")
-        self._add_action("fit", "Fit Image")
-        self._add_action("actual_size", "Actual Size")
+        self._add_action("fit", "Fit Image", shortcut="F")
+        self._add_action("actual_size", "Actual Size", shortcut="1")
         self._add_action("zoom_in", "Zoom In")
         self._add_action("zoom_out", "Zoom Out")
         navigation = self._add_action(
@@ -180,6 +208,185 @@ class MainWindow(QMainWindow):
             if self.global_toolbar.actions():
                 self.global_toolbar.addSeparator()
             self.global_toolbar.addActions([self.action_map[key] for key in keys])
+
+    def _connect_document_workflow(self) -> None:
+        self.action_map["open"].triggered.connect(self.open_primary_image_dialog)
+        self.action_map["save"].triggered.connect(self.save_current_image_dialog)
+        self.action_map["undo"].triggered.connect(self.undo_document)
+        self.action_map["redo"].triggered.connect(self.redo_document)
+        self.action_map["reset"].triggered.connect(self.reset_document)
+        canvas = self.operation_workspace.image_canvas
+        self.action_map["fit"].triggered.connect(canvas.fit_to_view)
+        self.action_map["actual_size"].triggered.connect(canvas.show_actual_size)
+        self.action_map["zoom_in"].triggered.connect(canvas.zoom_in)
+        self.action_map["zoom_out"].triggered.connect(canvas.zoom_out)
+        self.home_page.open_image_requested.connect(self.open_primary_image_dialog)
+        self.home_page.continue_requested.connect(self.show_operation_workspace)
+        self.operation_workspace.open_image_requested.connect(self.open_primary_image_dialog)
+        canvas.zoom_changed.connect(self.workbench_status_bar.set_zoom_status)
+        canvas.pixel_hovered.connect(self._show_pixel_status)
+        canvas.pixel_left.connect(self.workbench_status_bar.clear_pixel_status)
+        canvas.file_dropped.connect(self.open_primary_image_path)
+
+    def refresh_document_actions(self) -> None:
+        active = self.document_controller.has_document
+        for key in ("save", "reset", "fit", "actual_size", "zoom_in", "zoom_out"):
+            self.action_map[key].setEnabled(active)
+        self.action_map["undo"].setEnabled(self.document_controller.can_undo)
+        self.action_map["redo"].setEnabled(self.document_controller.can_redo)
+        self.action_map["clear_preview"].setEnabled(
+            self.document_controller.document_store.active_preview is not None
+        )
+
+    def open_primary_image_dialog(self) -> None:
+        initial = self._initial_directory("paths/last_open_directory")
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Primary Image",
+            str(initial),
+            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff);;PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)",
+        )
+        if path:
+            self.open_primary_image_path(path)
+
+    def open_primary_image_path(self, path: str | Path) -> bool:
+        candidate = Path(path)
+        if candidate.suffix.lower() not in self.document_controller.image_io.SUPPORTED_EXTENSIONS:
+            return False
+        if self.document_controller.has_document and not self._confirm_replacement():
+            return False
+        try:
+            asset = self.document_controller.open_primary_image(candidate)
+        except (InputValidationError, UnsupportedImageError, OperationExecutionError) as error:
+            self._show_open_error(str(error))
+            return False
+        except Exception:
+            logging.getLogger("dip_workbench").exception("Unexpected image-open failure")
+            self._show_open_error("An unexpected error occurred.")
+            return False
+        self.settings.set("paths/last_open_directory", str(candidate.parent))
+        self.settings.sync()
+        self._display_document(asset, fit=True)
+        self.setWindowTitle(f"DIP Workbench — {candidate.name}")
+        self.show_operation_workspace()
+        return True
+
+    def save_current_image_dialog(self) -> None:
+        asset = self.document_controller.current_image
+        if asset is None:
+            return
+        stem = Path(asset.name).stem
+        if not stem.endswith("-result"):
+            stem += "-result"
+        suggestion = self._initial_directory("paths/last_export_directory") / f"{stem}.png"
+        filters = "PNG (*.png);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
+        if asset.colour_model.value != "BINARY":
+            filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
+        path, selected = QFileDialog.getSaveFileName(
+            self, "Save Current Image", str(suggestion), filters
+        )
+        if path:
+            destination = Path(path)
+            if not destination.suffix:
+                extensions = {"JPEG": ".jpg", "BMP": ".bmp", "TIFF": ".tiff"}
+                destination = destination.with_suffix(
+                    next(
+                        (ext for name, ext in extensions.items() if selected.startswith(name)),
+                        ".png",
+                    )
+                )
+            self.save_current_image_path(destination)
+
+    def save_current_image_path(self, path: str | Path) -> bool:
+        destination = Path(path)
+        if not destination.suffix:
+            destination = destination.with_suffix(".png")
+        try:
+            self.document_controller.save_current_image(destination)
+        except (InputValidationError, ExportError) as error:
+            self._show_save_error(str(error))
+            return False
+        except Exception:
+            logging.getLogger("dip_workbench").exception("Unexpected image-save failure")
+            self._show_save_error("An unexpected error occurred.")
+            return False
+        self.settings.set("paths/last_export_directory", str(destination.parent))
+        self.settings.sync()
+        self.workbench_status_bar.showMessage("Current image saved.", 3000)
+        return True
+
+    def undo_document(self) -> None:
+        self._run_history_action(self.document_controller.undo)
+
+    def redo_document(self) -> None:
+        self._run_history_action(self.document_controller.redo)
+
+    def reset_document(self) -> None:
+        self._run_history_action(self.document_controller.reset_to_original)
+
+    def _run_history_action(self, action) -> None:  # type: ignore[no-untyped-def]
+        try:
+            self._display_document(action(), fit=False)
+        except (InputValidationError, OperationExecutionError):
+            return
+
+    def _display_document(self, asset: ImageAsset, *, fit: bool) -> None:
+        old = self.operation_workspace.image_canvas.current_asset
+        self.operation_workspace.set_image(asset)
+        if not fit and old is not None and old.shape == asset.shape:
+            self.operation_workspace.image_canvas.show_actual_size()
+        self.home_page.set_current_document(asset)
+        self.workbench_status_bar.set_image_status(asset)
+        self.workbench_status_bar.clear_pixel_status()
+        self.refresh_document_actions()
+
+    def _show_pixel_status(self, x: int, y: int, value: object) -> None:
+        asset = self.document_controller.current_image
+        if asset is not None:
+            self.workbench_status_bar.set_pixel_status(x, y, value, asset.colour_model)
+
+    def _confirm_replacement(self) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Replace Current Image",
+            "Replace the current image?\n\nOpening a new primary image will clear the current undo/redo history and document-specific state.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        return answer == QMessageBox.StandardButton.Yes
+
+    def _show_open_error(self, message: str) -> None:
+        QMessageBox.warning(
+            self, "Could Not Open Image", f"The selected image could not be opened.\n\n{message}"
+        )
+
+    def _show_save_error(self, message: str) -> None:
+        QMessageBox.warning(
+            self, "Could Not Save Image", f"The current image could not be saved.\n\n{message}"
+        )
+
+    def _initial_directory(self, key: str) -> Path:
+        stored = Path(self.settings.get(key, "", str))
+        if stored.is_dir():
+            return stored
+        source = self.document_controller.current_image
+        if (
+            source is not None
+            and source.source_path is not None
+            and source.source_path.parent.is_dir()
+        ):
+            return source.source_path.parent
+        return Path.home()
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if event.mimeData().hasUrls() and any(url.isLocalFile() for url in event.mimeData().urls()):
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        for url in event.mimeData().urls():
+            if url.isLocalFile() and self.open_primary_image_path(Path(url.toLocalFile())):
+                event.acceptProposedAction()
+                return
 
     def set_navigation_visible(self, visible: bool) -> None:
         if not visible and self.navigation_sidebar.isVisible():
