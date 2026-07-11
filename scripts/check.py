@@ -8,6 +8,7 @@ COMMANDS = (
     ("ruff", "format", "--check", "."),
     ("ruff", "check", "."),
     ("mypy", "src"),
+    (sys.executable, "scripts/verify_registry.py"),
     ("pytest", "-q"),
 )
 

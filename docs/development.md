@@ -64,6 +64,15 @@ normal undoable history. Resize exposes aspect locking and interpolation, rotati
 and Cropped canvas modes, and reusable rectangular ROI selection maps to full-resolution image
 coordinates without changing Current Result. C07 introduces operation and artifact contracts.
 
+C07 adds the PySide-free operation domain contracts: permanent identifiers, declarative inputs
+and parameters, conditional validation, heterogeneous typed artifacts, explicit apply candidates,
+and deterministic registry lookup/search. The production registry intentionally contains zero
+operations. C08 adds execution and cancellation; C10 registers the first academic operation.
+
+```bash
+python scripts/verify_registry.py
+```
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash

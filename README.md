@@ -67,6 +67,14 @@ interpolation; rotation supports Expanded and Cropped canvases. Rectangular ROI 
 full-resolution coordinates and can be retained without cropping. Academic operations remain
 unavailable; C07 introduces operation and artifact contracts.
 
+## Operation contracts
+
+C07 introduces permanent module and operation IDs plus declarative input, parameter, typed
+artifact, result, apply-candidate, definition, and registry contracts. Parameters support
+conditions and custom validators, while results may contain heterogeneous artifacts. The
+production registry is intentionally empty in C07. C08 adds execution and cancellation, and C10
+registers the first academic operation.
+
 ## Architecture principles
 
 The project uses a Python 3.11 `src` layout, explicit dependency injection, typed application
