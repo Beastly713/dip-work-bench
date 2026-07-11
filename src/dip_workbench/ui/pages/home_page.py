@@ -7,7 +7,7 @@ from dip_workbench.core import ImageAsset
 
 
 class HomePage(QWidget):
-    """Present the initial, deliberately inactive image-opening choices."""
+    """Present primary-image opening and current-document choices."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -45,9 +45,8 @@ class HomePage(QWidget):
         drop_label.setStyleSheet("color: #d1d5db; font-size: 15px;")
         drop_layout.addWidget(drop_label)
 
-        empty_message = QLabel(
-            "No image loaded. Open an image to begin when image support is added."
-        )
+        empty_message = QLabel("No image loaded. Open an image or drag one here to begin.")
+        self.empty_message_label = empty_message
         empty_message.setStyleSheet("color: #6b7280;")
 
         layout.addWidget(title)

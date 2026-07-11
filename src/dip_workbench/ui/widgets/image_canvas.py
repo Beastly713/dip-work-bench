@@ -1,12 +1,14 @@
 """Reusable graphics-view image canvas."""
 
 from pathlib import Path
+from typing import ClassVar
 
 from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtGui import (
     QDragEnterEvent,
     QDragMoveEvent,
     QDropEvent,
+    QKeyEvent,
     QMouseEvent,
     QPixmap,
     QWheelEvent,
@@ -26,6 +28,9 @@ class ImageCanvas(QGraphicsView):
     MIN_ZOOM = 5.0
     MAX_ZOOM = 3200.0
     ZOOM_STEP = 1.25
+    SUPPORTED_EXTENSIONS: ClassVar[frozenset[str]] = frozenset(
+        {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
+    )
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -79,6 +84,11 @@ class ImageCanvas(QGraphicsView):
             return
         self.resetTransform()
         self.fitInView(self._scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+        current = self.zoom_percent
+        if current < self.MIN_ZOOM:
+            self.scale(self.MIN_ZOOM / current, self.MIN_ZOOM / current)
+        elif current > self.MAX_ZOOM:
+            self.scale(self.MAX_ZOOM / current, self.MAX_ZOOM / current)
         self._fit_mode = True
         self.zoom_changed.emit(self.zoom_percent)
 
@@ -126,6 +136,22 @@ class ImageCanvas(QGraphicsView):
         self.pixel_left.emit()
         super().leaveEvent(event)
 
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Space and not event.isAutoRepeat():
+            self._space_pressed = True
+            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Space and not event.isAutoRepeat():
+            self._space_pressed = False
+            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            event.accept()
+            return
+        super().keyReleaseEvent(event)
+
     def _emit_pixel(self, viewport_position: QPoint) -> None:
         if self._asset is None:
             self.pixel_left.emit()
@@ -144,15 +170,32 @@ class ImageCanvas(QGraphicsView):
         self.pixel_hovered.emit(x, y, value)
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
-        if event.mimeData().hasUrls() and any(url.isLocalFile() for url in event.mimeData().urls()):
+        if self._first_supported_local_path(event) is not None:
             event.acceptProposedAction()
+        else:
+            event.ignore()
 
     def dragMoveEvent(self, event: QDragMoveEvent) -> None:
-        self.dragEnterEvent(event)  # type: ignore[arg-type]
+        if self._first_supported_local_path(event) is not None:
+            event.acceptProposedAction()
+        else:
+            event.ignore()
 
     def dropEvent(self, event: QDropEvent) -> None:
-        for url in event.mimeData().urls():
+        path = self._first_supported_local_path(event)
+        if path is not None:
+            self.file_dropped.emit(path)
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def _first_supported_local_path(self, event: object) -> Path | None:
+        mime_data = event.mimeData()  # type: ignore[attr-defined]
+        if not mime_data.hasUrls():
+            return None
+        for url in mime_data.urls():
             if url.isLocalFile():
-                self.file_dropped.emit(Path(url.toLocalFile()))
-                event.acceptProposedAction()
-                return
+                path = Path(url.toLocalFile())
+                if path.suffix.lower() in self.SUPPORTED_EXTENSIONS:
+                    return path
+        return None
