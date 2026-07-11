@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication
 
 from dip_workbench import application
 from dip_workbench.core import ColourModel, ImageAsset
+from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.services import (
     ImageIOService,
     ImageTransformService,
@@ -35,6 +36,7 @@ def test_build_context_uses_injected_resources(tmp_path) -> None:  # type: ignor
         assert isinstance(context.image_io, ImageIOService)
         assert isinstance(context.image_transforms, ImageTransformService)
         assert isinstance(context.document_store, DocumentStore)
+        assert isinstance(context.operation_execution, OperationExecutionManager)
         assert (session / "history").is_dir()
         assert context.logging.log_path.parent == log_directory
         assert session.parent == temporary_base

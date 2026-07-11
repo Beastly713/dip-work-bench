@@ -73,6 +73,12 @@ operations. C08 adds execution and cancellation; C10 registers the first academi
 python scripts/verify_registry.py
 ```
 
+C08 executes future academic operations through `QThreadPool`. Preview requests default to a
+200 ms debounce, newer previews supersede older work, and cancellation is cooperative. Typed
+progress and failures cross the worker boundary. Preview image inputs may be reduced, while Apply
+always uses full-resolution inputs. C09 connects execution to the workspace; the registry remains
+empty until C10.
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash

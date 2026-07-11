@@ -75,6 +75,14 @@ conditions and custom validators, while results may contain heterogeneous artifa
 production registry is intentionally empty in C07. C08 adds execution and cancellation, and C10
 registers the first academic operation.
 
+## Threaded execution
+
+C08 adds shared `QThreadPool` execution with typed progress, success, failure, and cancellation
+outcomes. Preview requests debounce for 200 ms by default and use latest-preview-wins semantics;
+preview inputs may be reduced in resolution, while Apply always receives full-resolution inputs.
+Cancellation is cooperative. The production registry remains empty until C10; C09 connects this
+infrastructure to the generic workspace.
+
 ## Architecture principles
 
 The project uses a Python 3.11 `src` layout, explicit dependency injection, typed application

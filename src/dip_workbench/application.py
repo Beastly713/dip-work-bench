@@ -9,6 +9,7 @@ from PySide6.QtCore import QCoreApplication, QSettings, QStandardPaths
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from dip_workbench.controllers import DocumentController
+from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.services import (
     ImageIOService,
     ImageTransformService,
@@ -46,6 +47,7 @@ class ApplicationContext:
     image_io: ImageIOService
     image_transforms: ImageTransformService
     document_store: DocumentStore
+    operation_execution: OperationExecutionManager
     _closed: bool = field(default=False, init=False, repr=False)
 
     def close(self) -> None:
@@ -54,6 +56,12 @@ class ApplicationContext:
             return
         self._closed = True
         failure: Exception | None = None
+        try:
+            if not self.operation_execution.shutdown():
+                raise RuntimeError("Operation execution did not stop before timeout.")
+        except Exception as error:
+            failure = error
+            self.logging.logger.exception("Failed to shut down operation execution")
         try:
             self.document_store.close()
         except Exception as error:
@@ -90,6 +98,7 @@ def build_application_context(
             temporary_directories.create_subdirectory("history"), image_io
         )
         document_store = DocumentStore(snapshot_store)
+        operation_execution = OperationExecutionManager()
         return ApplicationContext(
             logging_service,
             settings_service,
@@ -97,6 +106,7 @@ def build_application_context(
             image_io,
             image_transforms,
             document_store,
+            operation_execution,
         )
     except Exception:
         logging_service.logger.exception("Infrastructure context construction failed")
