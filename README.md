@@ -3,9 +3,8 @@
 DIP Workbench is an interactive desktop application for demonstrating, comparing, and
 documenting syllabus-based digital image-processing operations.
 
-The current implementation includes the C02 single-window desktop shell alongside the C01
-infrastructure foundation. Image loading, image operations, and document state are not available
-yet.
+The current implementation includes the C02 single-window desktop shell and the C03 canonical
+image and file-I/O foundation. Image operations and document state are not available yet.
 
 ## Development setup
 
@@ -37,6 +36,13 @@ dip-workbench
 Both commands launch the PySide6 desktop shell. The initial Home page and structural navigation,
 parameter, report-builder, and operation-workspace placeholders contain no image-processing
 behavior yet.
+
+## Image foundation
+
+Canonical three-channel images use RGB internally. OpenCV's BGR ordering is isolated to explicit
+conversion and file-I/O boundaries. The file service supports PNG, JPEG, BMP, and TIFF, including
+Unicode paths and explicit alpha compositing. The desktop actions are not connected to image
+loading yet; C05 will connect this service to the primary-image workflow.
 
 ## Architecture principles
 

@@ -44,6 +44,11 @@ These entry points configure the shared infrastructure and launch the C02 PySide
 The application context is released after the Qt event loop exits. C02 contains structural pages
 and panels only; image and operation workflows begin in later commits.
 
+C03 defines immutable canonical RGB, grayscale, binary, and label-map image assets plus separate
+floating intermediates. RGB is the sole internal three-channel order; BGR is confined to OpenCV
+conversion helpers. `ImageIOService` supports PNG, JPEG, BMP, and TIFF but is intentionally not
+wired to the desktop shell. C05 will add that user workflow.
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash

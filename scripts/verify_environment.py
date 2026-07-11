@@ -11,6 +11,8 @@ def main() -> int:
         print(f"error: Python 3.11.x is required; found {sys.version.split()[0]}", file=sys.stderr)
         return 1
     try:
+        opencv = import_module("cv2")
+        numpy = import_module("numpy")
         pyside = import_module("PySide6")
         package = import_module("dip_workbench")
     except ImportError as error:
@@ -28,6 +30,8 @@ def main() -> int:
     print(f"DIP Workbench: {package.__version__}")
     print(f"Package path: {package_path}")
     print(f"PySide6: {pyside.__version__}")
+    print(f"NumPy: {numpy.__version__}")
+    print(f"OpenCV: {opencv.__version__}")
     return 0
 
 

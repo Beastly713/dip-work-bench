@@ -5,7 +5,12 @@ from PySide6.QtCore import QCoreApplication, QSettings
 from PySide6.QtWidgets import QApplication
 
 from dip_workbench import application
-from dip_workbench.services import LoggingService, SettingsService, TemporaryDirectoryManager
+from dip_workbench.services import (
+    ImageIOService,
+    LoggingService,
+    SettingsService,
+    TemporaryDirectoryManager,
+)
 
 
 def test_build_context_uses_injected_resources(tmp_path) -> None:  # type: ignore[no-untyped-def]
@@ -23,6 +28,7 @@ def test_build_context_uses_injected_resources(tmp_path) -> None:  # type: ignor
         assert isinstance(context.logging, LoggingService)
         assert isinstance(context.settings, SettingsService)
         assert isinstance(context.temporary_directories, TemporaryDirectoryManager)
+        assert isinstance(context.image_io, ImageIOService)
         assert context.logging.log_path.parent == log_directory
         assert session.parent == temporary_base
         assert context.settings.backend is backend

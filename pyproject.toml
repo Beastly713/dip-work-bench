@@ -8,7 +8,11 @@ version = "0.1.0"
 description = "Interactive desktop workbench for demonstrating digital image processing operations."
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
-dependencies = ["PySide6==6.11.1"]
+dependencies = [
+    "numpy==2.4.6",
+    "opencv-python-headless==5.0.0.93",
+    "PySide6==6.11.1",
+]
 
 [project.optional-dependencies]
 dev = [

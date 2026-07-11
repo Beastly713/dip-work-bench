@@ -8,7 +8,12 @@ from pathlib import Path
 from PySide6.QtCore import QCoreApplication, QSettings, QStandardPaths
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from dip_workbench.services import LoggingService, SettingsService, TemporaryDirectoryManager
+from dip_workbench.services import (
+    ImageIOService,
+    LoggingService,
+    SettingsService,
+    TemporaryDirectoryManager,
+)
 from dip_workbench.ui import MainWindow
 
 APPLICATION_NAME = "DIP Workbench"
@@ -35,6 +40,7 @@ class ApplicationContext:
     logging: LoggingService
     settings: SettingsService
     temporary_directories: TemporaryDirectoryManager
+    image_io: ImageIOService
     _closed: bool = field(default=False, init=False, repr=False)
 
     def close(self) -> None:
@@ -66,7 +72,12 @@ def build_application_context(
     try:
         settings_service = SettingsService(settings)
         temporary_directories = TemporaryDirectoryManager(temporary_base_directory)
-        return ApplicationContext(logging_service, settings_service, temporary_directories)
+        return ApplicationContext(
+            logging_service,
+            settings_service,
+            temporary_directories,
+            ImageIOService(),
+        )
     except Exception:
         logging_service.logger.exception("Infrastructure context construction failed")
         if temporary_directories is not None:
