@@ -3,9 +3,9 @@
 DIP Workbench is an interactive desktop application for demonstrating, comparing, and
 documenting syllabus-based digital image-processing operations.
 
-The current implementation is the C01 infrastructure foundation. It provides the installable
-package, shared infrastructure services, developer tooling, tests, and CI. The graphical shell
-begins in C02; no image operations or usable desktop workbench are present yet.
+The current implementation includes the C02 single-window desktop shell alongside the C01
+infrastructure foundation. Image loading, image operations, and document state are not available
+yet.
 
 ## Development setup
 
@@ -34,8 +34,9 @@ python -m dip_workbench
 dip-workbench
 ```
 
-At C01, both commands initialize the dependency-injected infrastructure composition and exit
-successfully without creating a GUI or opening a window.
+Both commands launch the PySide6 desktop shell. The initial Home page and structural navigation,
+parameter, report-builder, and operation-workspace placeholders contain no image-processing
+behavior yet.
 
 ## Architecture principles
 

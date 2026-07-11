@@ -1,11 +1,15 @@
-"""Headless application composition root for the C01 foundation."""
+"""Application composition and desktop startup."""
 
+import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication, QSettings, QStandardPaths
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from dip_workbench.services import LoggingService, SettingsService, TemporaryDirectoryManager
+from dip_workbench.ui import MainWindow
 
 APPLICATION_NAME = "DIP Workbench"
 ORGANIZATION_NAME = "DIP Workbench"
@@ -64,17 +68,50 @@ def build_application_context(
         temporary_directories = TemporaryDirectoryManager(temporary_base_directory)
         return ApplicationContext(logging_service, settings_service, temporary_directories)
     except Exception:
+        logging_service.logger.exception("Infrastructure context construction failed")
         if temporary_directories is not None:
             temporary_directories.cleanup()
         logging_service.close()
         raise
 
 
-def main() -> int:
-    """Initialize and cleanly stop the C01 infrastructure context."""
-    context = build_application_context()
+def create_qt_application(argv: Sequence[str] | None = None) -> QApplication:
+    """Create or reuse the process-wide Qt application."""
+    _set_application_metadata()
+    existing = QApplication.instance()
+    if isinstance(existing, QApplication):
+        return existing
+    return QApplication(list(argv) if argv is not None else sys.argv)
+
+
+def _show_startup_error() -> None:
+    QMessageBox.critical(
+        None,
+        APPLICATION_NAME,
+        "DIP Workbench could not start.\n\nCheck the application log for more information.",
+    )
+
+
+def run_application(application: QApplication, context: ApplicationContext) -> int:
+    """Construct, show, and execute the single-window application."""
     try:
-        context.logging.logger.info("Infrastructure initialization succeeded")
+        window = MainWindow(context.settings)
+        window.show()
+        return application.exec()
+    except Exception:
+        context.logging.logger.exception("DIP Workbench startup failed")
+        _show_startup_error()
+        return 1
     finally:
         context.close()
-    return 0
+
+
+def main() -> int:
+    """Start the desktop application and return its Qt exit status."""
+    application = create_qt_application()
+    try:
+        context = build_application_context()
+    except Exception:
+        _show_startup_error()
+        return 1
+    return run_application(application, context)

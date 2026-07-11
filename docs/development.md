@@ -40,9 +40,15 @@ python -m dip_workbench
 dip-workbench
 ```
 
-In C01 these entry points perform a headless infrastructure bootstrap: they configure metadata,
-logging, settings, and a temporary session, then cleanly release resources and exit. They do not
-create a Qt application or window. The graphical application shell begins in C02.
+These entry points configure the shared infrastructure and launch the C02 PySide6 desktop shell.
+The application context is released after the Qt event loop exits. C02 contains structural pages
+and panels only; image and operation workflows begin in later commits.
+
+For headless GUI validation on Ubuntu, run:
+
+```bash
+QT_QPA_PLATFORM=offscreen pytest tests/gui -q
+```
 
 Codex must not commit or push repository changes. Staging, branch changes, and pull-request
 creation also remain user-controlled.
