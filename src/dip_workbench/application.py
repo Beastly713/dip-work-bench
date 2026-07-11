@@ -14,6 +14,7 @@ from dip_workbench.services import (
     SettingsService,
     TemporaryDirectoryManager,
 )
+from dip_workbench.state import DocumentStore, HistorySnapshotStore
 from dip_workbench.ui import MainWindow
 
 APPLICATION_NAME = "DIP Workbench"
@@ -41,6 +42,7 @@ class ApplicationContext:
     settings: SettingsService
     temporary_directories: TemporaryDirectoryManager
     image_io: ImageIOService
+    document_store: DocumentStore
     _closed: bool = field(default=False, init=False, repr=False)
 
     def close(self) -> None:
@@ -48,13 +50,20 @@ class ApplicationContext:
         if self._closed:
             return
         self._closed = True
+        failure: Exception | None = None
+        try:
+            self.document_store.close()
+        except Exception as error:
+            failure = error
+            self.logging.logger.exception("Failed to close document store")
         try:
             self.temporary_directories.cleanup()
-        except Exception:
+        except Exception as error:
+            failure = failure or error
             self.logging.logger.exception("Failed to clean temporary session directory")
-            raise
-        finally:
-            self.logging.close()
+        self.logging.close()
+        if failure is not None:
+            raise failure
 
 
 def build_application_context(
@@ -72,11 +81,17 @@ def build_application_context(
     try:
         settings_service = SettingsService(settings)
         temporary_directories = TemporaryDirectoryManager(temporary_base_directory)
+        image_io = ImageIOService()
+        snapshot_store = HistorySnapshotStore(
+            temporary_directories.create_subdirectory("history"), image_io
+        )
+        document_store = DocumentStore(snapshot_store)
         return ApplicationContext(
             logging_service,
             settings_service,
             temporary_directories,
-            ImageIOService(),
+            image_io,
+            document_store,
         )
     except Exception:
         logging_service.logger.exception("Infrastructure context construction failed")

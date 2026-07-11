@@ -49,6 +49,11 @@ floating intermediates. RGB is the sole internal three-channel order; BGR is con
 conversion helpers. `ImageIOService` supports PNG, JPEG, BMP, and TIFF but is intentionally not
 wired to the desktop shell. C05 will add that user workflow.
 
+C04 adds Qt-independent single-document state. Original remains immutable, previews do not alter
+Current Result, and applied states use disk-backed lossless PNG undo/redo history capped at 25
+entries. Temporary history is cleaned on normal shutdown, while abandoned marked sessions are
+cleaned on a later launch. C05 will connect this state to the desktop workflow.
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash

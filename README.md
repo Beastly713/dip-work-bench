@@ -44,6 +44,13 @@ conversion and file-I/O boundaries. The file service supports PNG, JPEG, BMP, an
 Unicode paths and explicit alpha compositing. The desktop actions are not connected to image
 loading yet; C05 will connect this service to the primary-image workflow.
 
+## Document state foundation
+
+C04 adds a single-document state store with an immutable Original, independent Current Result,
+and non-destructive previews. Applied states use lossless temporary PNG snapshots for undo and
+redo, limited to the newest 25 applied states. This state is not connected to the GUI yet; C05
+will provide the primary image workflow and canvas.
+
 ## Architecture principles
 
 The project uses a Python 3.11 `src` layout, explicit dependency injection, typed application
