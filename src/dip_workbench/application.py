@@ -139,6 +139,7 @@ def run_application(application: QApplication, context: ApplicationContext) -> i
         window = MainWindow(
             context.settings,
             DocumentController(context.image_io, context.image_transforms, context.document_store),
+            context.operation_execution,
         )
         window.show()
         return application.exec()

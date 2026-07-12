@@ -3,8 +3,14 @@
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QLabel, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 
+from dip_workbench.controllers import OperationController
 from dip_workbench.core import ImageAsset
-from dip_workbench.ui.widgets import ImageCanvas
+from dip_workbench.ui.widgets import (
+    ImageCanvas,
+    OperationHeader,
+    OperationInputStrip,
+    ResultWorkspaceHost,
+)
 
 
 class OperationWorkspace(QWidget):
@@ -13,6 +19,9 @@ class OperationWorkspace(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
+        self.mode_stack = QStackedWidget()
+        document_view = QWidget()
+        document_layout = QVBoxLayout(document_view)
         self._states = QStackedWidget()
         empty = QWidget()
         empty_layout = QVBoxLayout(empty)
@@ -38,7 +47,35 @@ class OperationWorkspace(QWidget):
         image_layout.addWidget(self.image_canvas, 1)
         self._states.addWidget(empty)
         self._states.addWidget(image_state)
-        layout.addWidget(self._states)
+        document_layout.addWidget(self._states)
+        self.academic_view = QWidget()
+        academic_layout = QVBoxLayout(self.academic_view)
+        self.operation_header = OperationHeader()
+        self.operation_input_strip = OperationInputStrip()
+        self.result_workspace = ResultWorkspaceHost()
+        academic_layout.addWidget(self.operation_header)
+        academic_layout.addWidget(self.operation_input_strip)
+        academic_layout.addWidget(self.result_workspace, 1)
+        self.mode_stack.addWidget(document_view)
+        self.mode_stack.addWidget(self.academic_view)
+        layout.addWidget(self.mode_stack)
+        self.show_document_view()
+
+    def show_document_view(self) -> None:
+        self.mode_stack.setCurrentIndex(0)
+
+    def show_academic_operation(self, controller: OperationController) -> None:
+        definition = controller.active_definition
+        if definition is None:
+            self.operation_header.clear_operation()
+        else:
+            self.operation_header.set_operation(definition)
+        self.refresh_academic_operation(controller)
+        self.mode_stack.setCurrentIndex(1)
+
+    def refresh_academic_operation(self, controller: OperationController) -> None:
+        self.operation_input_strip.refresh(controller)
+        self.result_workspace.refresh(controller)
 
     def set_image(self, asset: ImageAsset) -> None:
         self.image_name_label.setText(asset.name)

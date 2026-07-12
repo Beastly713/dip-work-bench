@@ -2,6 +2,7 @@
 
 from PySide6.QtWidgets import QLabel, QStackedWidget, QVBoxLayout, QWidget
 
+from dip_workbench.ui.panels.operation_parameter_panel import OperationParameterPanel
 from dip_workbench.ui.panels.utility_transform_panel import UtilityTransformPanel
 
 
@@ -27,8 +28,10 @@ class ParameterPanel(QWidget):
         placeholder_layout.addWidget(message)
         placeholder_layout.addStretch()
         self.utility_panel = UtilityTransformPanel()
+        self.operation_panel = OperationParameterPanel()
         self.stack.addWidget(placeholder)
         self.stack.addWidget(self.utility_panel)
+        self.stack.addWidget(self.operation_panel)
         layout.addWidget(self.stack)
 
     def show_placeholder(self) -> None:
@@ -36,3 +39,6 @@ class ParameterPanel(QWidget):
 
     def show_utility_panel(self) -> None:
         self.stack.setCurrentIndex(1)
+
+    def show_operation_panel(self) -> None:
+        self.stack.setCurrentIndex(2)

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QFileDialog
 
 from dip_workbench.controllers import DocumentController
 from dip_workbench.core import ColourModel, ImageAsset
+from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.services import ImageIOService, ImageTransformService, SettingsService
 from dip_workbench.state import DocumentStore, HistorySnapshotStore
 from dip_workbench.ui.main_window import MainWindow, PageIndex
@@ -25,6 +26,7 @@ def window_with_source(qtbot, tmp_path: Path) -> tuple[MainWindow, Path]:  # typ
     window = MainWindow(
         SettingsService(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)),
         controller,
+        OperationExecutionManager(),
     )
     qtbot.addWidget(window)
     window.show()

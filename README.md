@@ -83,6 +83,15 @@ preview inputs may be reduced in resolution, while Apply always receives full-re
 Cancellation is cooperative. The production registry remains empty until C10; C09 connects this
 infrastructure to the generic workspace.
 
+## Generic operation workspace
+
+C09 connects the operation contracts and threaded execution to a reusable academic workspace.
+Inputs appear before parameters, with explicit Original and Current Result source choices.
+Preview or Run is non-destructive; Apply reruns at full resolution and creates one history entry.
+Input, parameter, and execution failures remain inline in the workspace. The production registry
+is still empty: C10 adds Image Negative as the first operation, and C11 adds navigation and
+generated parameter controls.
+
 ## Architecture principles
 
 The project uses a Python 3.11 `src` layout, explicit dependency injection, typed application

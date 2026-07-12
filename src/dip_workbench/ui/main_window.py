@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from dip_workbench.controllers import DocumentController
+from dip_workbench.controllers import DocumentController, OperationController
 from dip_workbench.core import (
     ExportError,
     ImageAsset,
@@ -26,6 +26,8 @@ from dip_workbench.core import (
     RectangularRegion,
     UnsupportedImageError,
 )
+from dip_workbench.execution import OperationExecutionManager
+from dip_workbench.operations import OperationDefinition
 from dip_workbench.services import (
     SettingsService,
 )
@@ -51,11 +53,15 @@ class MainWindow(QMainWindow):
         self,
         settings: SettingsService,
         document_controller: DocumentController,
+        operation_execution: OperationExecutionManager,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.settings = settings
         self.document_controller = document_controller
+        self.operation_controller = OperationController(
+            document_controller, operation_execution, self
+        )
         self.action_map: dict[str, QAction] = {}
         self.setWindowTitle("DIP Workbench")
         self.setMinimumSize(self.MINIMUM_SIZE)
@@ -101,6 +107,7 @@ class MainWindow(QMainWindow):
         self.workbench_status_bar = WorkbenchStatusBar()
         self.setStatusBar(self.workbench_status_bar)
         self._connect_document_workflow()
+        self._connect_operation_workflow()
         self._restore_geometry()
         self.show_home_page()
         self.refresh_document_actions()
@@ -280,7 +287,56 @@ class MainWindow(QMainWindow):
         )
         utility.apply_preview_requested.connect(self.apply_utility_preview)
         utility.clear_preview_requested.connect(self.clear_utility_preview)
-        self.action_map["clear_preview"].triggered.connect(self.clear_utility_preview)
+        self.action_map["clear_preview"].triggered.connect(self.clear_active_preview)
+
+    def _connect_operation_workflow(self) -> None:
+        inputs = self.operation_workspace.operation_input_strip
+        result = self.operation_workspace.result_workspace
+        panel = self.parameter_panel.operation_panel
+        inputs.source_changed.connect(self.operation_controller.set_input_source)
+        inputs.open_image_requested.connect(self.open_primary_image_dialog)
+        result.open_image_requested.connect(self.open_primary_image_dialog)
+        result.cancel_requested.connect(self.operation_controller.cancel)
+        panel.parameter_values_changed.connect(self.operation_controller.set_parameter_values)
+        panel.preview_requested.connect(self.operation_controller.preview_or_run)
+        panel.apply_requested.connect(self.operation_controller.apply)
+        panel.reset_requested.connect(self.operation_controller.reset_parameters)
+        panel.apply_candidate_changed.connect(self.operation_controller.set_apply_candidate)
+        self.operation_controller.changed.connect(self._refresh_operation_workspace)
+        self.operation_controller.image_applied.connect(self._academic_image_applied)
+
+    def open_operation(self, definition: OperationDefinition) -> None:
+        if self.document_controller.document_store.active_preview is not None:
+            self.document_controller.clear_active_preview()
+        self.operation_workspace.image_canvas.cancel_interaction()
+        self.operation_controller.select_operation(definition)
+        self.operation_workspace.show_academic_operation(self.operation_controller)
+        self.parameter_panel.operation_panel.configure(self.operation_controller)
+        self.parameter_panel.show_operation_panel()
+        self.show_operation_workspace()
+
+    def _refresh_operation_workspace(self) -> None:
+        if (
+            self.operation_workspace.mode_stack.currentWidget()
+            is self.operation_workspace.academic_view
+        ):
+            self.operation_workspace.refresh_academic_operation(self.operation_controller)
+            self.parameter_panel.operation_panel.refresh(self.operation_controller)
+        self.refresh_document_actions()
+
+    def _academic_image_applied(self, asset: ImageAsset) -> None:
+        self._display_document(asset, fit=True)
+        self.operation_workspace.show_academic_operation(self.operation_controller)
+        self.parameter_panel.show_operation_panel()
+
+    def clear_active_preview(self) -> None:
+        if (
+            self.operation_workspace.mode_stack.currentWidget()
+            is self.operation_workspace.academic_view
+        ):
+            self.operation_controller.clear_result()
+        else:
+            self.clear_utility_preview()
 
     def refresh_document_actions(self) -> None:
         active = self.document_controller.has_document
@@ -327,6 +383,13 @@ class MainWindow(QMainWindow):
         self.show_operation_workspace()
         self.parameter_panel.utility_panel.set_preview_available(False)
         self.parameter_panel.show_placeholder()
+        self.operation_controller.document_changed()
+        if self.operation_controller.active_definition is not None:
+            self.operation_workspace.show_academic_operation(self.operation_controller)
+            self.parameter_panel.operation_panel.configure(self.operation_controller)
+            self.parameter_panel.show_operation_panel()
+        else:
+            self.operation_workspace.show_document_view()
         return True
 
     def save_current_image_dialog(self) -> None:
@@ -395,6 +458,11 @@ class MainWindow(QMainWindow):
         self.parameter_panel.utility_panel.set_preview_available(False)
         self.parameter_panel.show_placeholder()
         self._display_document(restored, fit=False)
+        self.operation_controller.document_changed()
+        if self.operation_controller.active_definition is not None:
+            self.operation_workspace.show_academic_operation(self.operation_controller)
+            self.parameter_panel.operation_panel.refresh(self.operation_controller)
+            self.parameter_panel.show_operation_panel()
 
     def _display_document(self, asset: ImageAsset, *, fit: bool) -> None:
         old = self.operation_workspace.image_canvas.current_asset
@@ -415,6 +483,8 @@ class MainWindow(QMainWindow):
         asset = self.document_controller.current_image
         if asset is None:
             return
+        self.operation_controller.clear_operation()
+        self.operation_workspace.show_document_view()
         if self.document_controller.document_store.active_preview is not None:
             self.clear_utility_preview()
         self.parameter_panel.utility_panel.configure(
@@ -467,6 +537,7 @@ class MainWindow(QMainWindow):
         self.operation_workspace.image_canvas.clear_region_selection()
         self.parameter_panel.utility_panel.set_preview_available(False)
         self._display_document(asset, fit=True)
+        self.operation_controller.document_changed()
 
     def clear_utility_preview(self) -> None:
         self.document_controller.clear_active_preview()

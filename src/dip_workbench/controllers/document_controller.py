@@ -1,8 +1,10 @@
 """Coordination for the primary image document workflow."""
 
+from collections.abc import Mapping
 from pathlib import Path
 
 from dip_workbench.core import ImageAsset, InputValidationError, RectangularRegion
+from dip_workbench.operations import OperationResult
 from dip_workbench.services import (
     FlipDirection,
     ImageIOService,
@@ -160,6 +162,46 @@ class DocumentController:
 
     def clear_active_preview(self) -> None:
         self.document_store.clear_active_preview()
+
+    def set_operation_preview(
+        self,
+        *,
+        operation_id: str,
+        input_asset_ids: tuple[str, ...],
+        parameters: Mapping[str, object],
+        interaction_data: Mapping[str, object],
+        result: OperationResult,
+        request_generation: int,
+    ) -> None:
+        self.document_store.set_active_preview(
+            ActivePreview(
+                operation_id,
+                input_asset_ids,
+                parameters,
+                interaction_data,
+                result,
+                request_generation,
+            )
+        )
+
+    def apply_operation_image(
+        self,
+        asset: ImageAsset,
+        *,
+        operation_id: str,
+        operation_name: str,
+        parameters: Mapping[str, object],
+        input_source: str,
+        metadata: Mapping[str, object] | None = None,
+    ) -> ImageAsset:
+        return self.document_store.apply_image(
+            asset,
+            operation_id=operation_id,
+            operation_name=operation_name,
+            parameters=parameters,
+            input_source=input_source,
+            metadata=metadata,
+        )
 
     def _set_preview(
         self,

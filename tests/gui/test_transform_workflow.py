@@ -5,6 +5,7 @@ from PySide6.QtCore import QSettings
 
 from dip_workbench.controllers import DocumentController
 from dip_workbench.core import ColourModel, ImageAsset, RectangularRegion
+from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.services import ImageIOService, ImageTransformService, SettingsService
 from dip_workbench.state import DocumentStore, HistorySnapshotStore
 from dip_workbench.ui.main_window import MainWindow
@@ -19,7 +20,9 @@ def make_window(qtbot, tmp_path: Path) -> MainWindow:  # type: ignore[no-untyped
         io, ImageTransformService(), DocumentStore(HistorySnapshotStore(history, io))
     )
     window = MainWindow(
-        SettingsService(QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat)), controller
+        SettingsService(QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat)),
+        controller,
+        OperationExecutionManager(),
     )
     qtbot.addWidget(window)
     window.show()

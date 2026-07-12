@@ -37,6 +37,7 @@ def test_build_context_uses_injected_resources(tmp_path) -> None:  # type: ignor
         assert isinstance(context.image_transforms, ImageTransformService)
         assert isinstance(context.document_store, DocumentStore)
         assert isinstance(context.operation_execution, OperationExecutionManager)
+        assert context.operation_execution.parent() is None
         assert (session / "history").is_dir()
         assert context.logging.log_path.parent == log_directory
         assert session.parent == temporary_base

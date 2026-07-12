@@ -7,6 +7,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QSettings
 
 from dip_workbench.controllers import DocumentController
+from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.services import ImageIOService, ImageTransformService, SettingsService
 from dip_workbench.state import DocumentStore, HistorySnapshotStore
 from dip_workbench.ui.main_window import MainWindow, PageIndex
@@ -22,7 +23,7 @@ def make_window(qtbot, tmp_path) -> MainWindow:  # type: ignore[no-untyped-def]
         ImageTransformService(),
         DocumentStore(HistorySnapshotStore(history, image_io)),
     )
-    window = MainWindow(SettingsService(backend), controller)
+    window = MainWindow(SettingsService(backend), controller, OperationExecutionManager())
     qtbot.addWidget(window)
     window.show()
     return window
@@ -102,6 +103,7 @@ def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ig
             ImageTransformService(),
             DocumentStore(HistorySnapshotStore(history, image_io)),
         ),
+        OperationExecutionManager(),
     )
     qtbot.addWidget(first)
     first.show()
@@ -119,6 +121,7 @@ def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ig
             ImageTransformService(),
             DocumentStore(HistorySnapshotStore(second_history, image_io)),
         ),
+        OperationExecutionManager(),
     )
     qtbot.addWidget(second)
     second.show()
@@ -144,6 +147,7 @@ def test_corrupt_settings_fall_back_safely(qtbot, tmp_path) -> None:  # type: ig
             ImageTransformService(),
             DocumentStore(HistorySnapshotStore(history, image_io)),
         ),
+        OperationExecutionManager(),
     )
     qtbot.addWidget(window)
     assert window._navigation_width == 270

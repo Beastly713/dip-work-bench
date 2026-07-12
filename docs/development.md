@@ -79,6 +79,13 @@ progress and failures cross the worker boundary. Preview image inputs may be red
 always uses full-resolution inputs. C09 connects execution to the workspace; the registry remains
 empty until C10.
 
+C09 provides the generic academic-operation workspace. Inputs are shown before parameters and
+Original versus Current Result is always an explicit source choice. Preview or Run leaves Current
+Result and history unchanged; Apply performs a new full-resolution execution and records exactly
+one history entry. Validation and typed execution failures are displayed inline. No production
+academic operation is registered yet. C10 introduces Image Negative, while C11 supplies operation
+navigation and generated parameter controls.
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash
