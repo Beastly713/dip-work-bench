@@ -58,6 +58,25 @@ def test_colour_range_uses_rgb_order_extracts_and_preserves_source() -> None:
     np.testing.assert_array_equal(image.data, data)
 
 
+def test_colour_range_accepts_exact_channel_values_and_rejects_reversed_ranges() -> None:
+    data = np.array([[[255, 0, 0], [254, 0, 0], [255, 1, 0], [0, 0, 255]]], dtype=np.uint8)
+    image = ImageAsset("rgb", data.copy(), ColourModel.RGB)
+    result = ColourRangeExecutor().execute(
+        context(image, {"red_range": (255, 255), "green_range": (0, 0), "blue_range": (0, 0)})
+    )
+    np.testing.assert_array_equal(
+        result.primary_artifact.data.data, np.array([[255, 0, 0, 0]], dtype=np.uint8)
+    )  # type: ignore[union-attr]
+    np.testing.assert_array_equal(image.data, data)
+    with pytest.raises(InputValidationError):
+        ColourRangeExecutor().execute(
+            context(
+                image,
+                {"red_range": (255, 254), "green_range": (0, 0), "blue_range": (0, 0)},
+            )
+        )
+
+
 def test_adaptive_binary_validation_polarity_otsu_and_source_immutable() -> None:
     data = np.tile(np.array([20, 60, 120, 200, 240], dtype=np.uint8), (5, 1))
     image = ImageAsset("gray", data, ColourModel.GRAY)

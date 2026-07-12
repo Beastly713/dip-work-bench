@@ -20,7 +20,7 @@ from dip_workbench.operations.m09.common import (
     grayscale_u8,
     mask_metrics,
     mask_overlay,
-    range_pair,
+    strict_range_pair,
     strict_range_validator,
 )
 from dip_workbench.operations.parameters import ParameterSpec, ParameterType
@@ -42,7 +42,9 @@ class RangeThresholdExecutor:
             raise InputValidationError(
                 "Intensity-range thresholding requires RGB or grayscale input."
             )
-        lower, upper = range_pair(context.parameters.get("intensity_range"), "Intensity range")
+        lower, upper = strict_range_pair(
+            context.parameters.get("intensity_range"), "Intensity range"
+        )
         include = bool(context.parameters.get("include_boundaries"))
         gray = grayscale_u8(image)
         context.cancellation_token.raise_if_cancelled()

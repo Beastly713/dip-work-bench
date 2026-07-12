@@ -65,7 +65,7 @@ def extract_masked(image: ImageAsset, mask: np.ndarray) -> ImageAsset:
     )
 
 
-def range_pair(value: object, label: str) -> tuple[int, int]:
+def _range_pair(value: object, label: str, *, allow_equal: bool) -> tuple[int, int]:
     if not isinstance(value, (tuple, list)) or len(value) != 2:
         raise InputValidationError(f"{label} must contain two thresholds.")
     low, high = value
@@ -74,16 +74,43 @@ def range_pair(value: object, label: str) -> tuple[int, int]:
         or isinstance(low, bool)
         or not isinstance(high, int)
         or isinstance(high, bool)
-        or low >= high
+        or low < 0
+        or high > 255
     ):
+        raise InputValidationError(f"{label} bounds must be integers between 0 and 255.")
+    if allow_equal:
+        if low > high:
+            raise InputValidationError(
+                f"{label} lower bound must be less than or equal to upper bound."
+            )
+    elif low >= high:
         raise InputValidationError(f"{label} lower bound must be less than upper bound.")
     return low, high
+
+
+def strict_range_pair(value: object, label: str) -> tuple[int, int]:
+    return _range_pair(value, label, allow_equal=False)
+
+
+def inclusive_range_pair(value: object, label: str) -> tuple[int, int]:
+    return _range_pair(value, label, allow_equal=True)
 
 
 def strict_range_validator(label: str) -> Callable[[object, Mapping[str, object]], str | None]:
     def _validator(value: object, _values: Mapping[str, object]) -> str | None:
         try:
-            range_pair(value, label)
+            strict_range_pair(value, label)
+        except InputValidationError as error:
+            return str(error)
+        return None
+
+    return _validator
+
+
+def inclusive_range_validator(label: str) -> Callable[[object, Mapping[str, object]], str | None]:
+    def _validator(value: object, _values: Mapping[str, object]) -> str | None:
+        try:
+            inclusive_range_pair(value, label)
         except InputValidationError as error:
             return str(error)
         return None

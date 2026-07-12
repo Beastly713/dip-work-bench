@@ -32,7 +32,7 @@ from dip_workbench.services import (
     ExportService,
     SettingsService,
 )
-from dip_workbench.ui.pages import HomePage, OperationWorkspace, ReportBuilderPage
+from dip_workbench.ui.pages import HomePage, OperationWorkspace
 from dip_workbench.ui.panels import NavigationSidebar, ParameterPanel, WorkbenchStatusBar
 from dip_workbench.ui.widgets.operation_result_presenter import DisplayedExportTarget
 
@@ -40,7 +40,6 @@ from dip_workbench.ui.widgets.operation_result_presenter import DisplayedExportT
 class PageIndex(IntEnum):
     HOME = 0
     OPERATION = 1
-    REPORT = 2
 
 
 class MainWindow(QMainWindow):
@@ -75,10 +74,8 @@ class MainWindow(QMainWindow):
         self.page_stack = QStackedWidget()
         self.home_page = HomePage(operation_registry)
         self.operation_workspace = OperationWorkspace()
-        self.report_builder_page = ReportBuilderPage(self.show_home_page)
         self.page_stack.addWidget(self.home_page)
         self.page_stack.addWidget(self.operation_workspace)
-        self.page_stack.addWidget(self.report_builder_page)
 
         self.navigation_sidebar = NavigationSidebar(self.show_home_page, operation_registry)
         self._recent_operations: list[OperationDefinition] = []
@@ -128,11 +125,6 @@ class MainWindow(QMainWindow):
         self._sync_context_panels()
         self.refresh_document_actions()
 
-    def show_report_builder(self) -> None:
-        self.page_stack.setCurrentIndex(PageIndex.REPORT)
-        self._sync_context_panels()
-        self.refresh_document_actions()
-
     def _add_action(
         self,
         key: str,
@@ -153,14 +145,9 @@ class MainWindow(QMainWindow):
     def _create_actions(self) -> None:
         self._add_action("home", "Home", enabled=True).triggered.connect(self.show_home_page)
         self._add_action("open", "Open Primary Image", enabled=True, shortcut="Ctrl+O")
-        self._add_action("sample", "Open Sample Image")
         self._add_action("save", "Save Current Image", shortcut="Ctrl+S")
         self._add_action("export_result", "Export Displayed Result")
         self._add_action("operation_search", "Search Operations", enabled=True, shortcut="Ctrl+K")
-        self._add_action("report", "Open Report Builder", enabled=True).triggered.connect(
-            self.show_report_builder
-        )
-        self._add_action("export_report", "Export Report")
         self._add_action("exit", "Exit", enabled=True).triggered.connect(self.close)
         self._add_action("undo", "Undo", shortcut="Ctrl+Z")
         self._add_action("redo", "Redo", shortcut="Ctrl+Y")
@@ -185,20 +172,11 @@ class MainWindow(QMainWindow):
         )
         parameters.setChecked(True)
         parameters.toggled.connect(self.set_parameters_visible)
-        self._add_action("show_details", "Show Details")
-        self._add_action("presentation", "Presentation Mode", shortcut="F11")
-        self._add_action("about_operation", "About This Operation")
-        self._add_action("shortcuts", "Keyboard Shortcuts")
-        self._add_action("about", "About DIP Workbench")
         self._add_action("compare", "Before/After Comparison")
-        self._add_action("add_report", "Add to Report")
 
     def _create_menus(self) -> None:
         menu_specs = (
-            (
-                "File",
-                ("open", "sample", "save", "export_result", "report", "export_report", "exit"),
-            ),
+            ("File", ("open", "save", "export_result", "exit")),
             (
                 "Edit",
                 (
@@ -222,13 +200,10 @@ class MainWindow(QMainWindow):
                     "zoom_out",
                     "show_navigation",
                     "show_parameters",
-                    "show_details",
                     "compare",
-                    "presentation",
                 ),
             ),
             ("Operations", ("operation_search",)),
-            ("Help", ("about_operation", "shortcuts", "about")),
         )
         self.menus: dict[str, QMenu] = {}
         for title, action_keys in menu_specs:
@@ -245,8 +220,7 @@ class MainWindow(QMainWindow):
         for keys in (
             ("home", "open", "save"),
             ("undo", "redo", "reset"),
-            ("compare", "add_report", "export_result"),
-            ("presentation",),
+            ("compare", "export_result"),
         ):
             if self.global_toolbar.actions():
                 self.global_toolbar.addSeparator()
@@ -556,22 +530,34 @@ class MainWindow(QMainWindow):
             is self.operation_workspace.academic_view
         ):
             target = self.operation_workspace.displayed_export_target()
-            if target is not None:
-                try:
-                    self.export_service.default_extension(
-                        target.artifact, has_render_source=target.render_source is not None
-                    )
-                except ExportError:
-                    return None
+            if target is not None and self.export_service.supported_extensions(
+                target.artifact, has_render_source=target.render_source is not None
+            ):
                 return target
             result = self.operation_controller.active_result
-            if result is not None and result.primary_artifact.exportable:
-                try:
-                    self.export_service.default_extension(result.primary_artifact)
-                except ExportError:
-                    pass
-                else:
-                    return DisplayedExportTarget(result.primary_artifact)
+            if result is not None and self.export_service.supported_extensions(
+                result.primary_artifact
+            ):
+                return DisplayedExportTarget(result.primary_artifact)
+            return None
+
+        preview = self.document_controller.document_store.active_preview
+        utility_labels = {
+            "U-05": "Crop Preview",
+            "U-06": "Resize Preview",
+            "U-07": "Rotate Preview",
+            "U-08": "Flip/Mirror Preview",
+        }
+        if (
+            preview is not None
+            and preview.operation_id in utility_labels
+            and isinstance(preview.result, ImageAsset)
+        ):
+            return DisplayedExportTarget(
+                ImageArtifact(
+                    "utility_preview", utility_labels[preview.operation_id], preview.result
+                )
+            )
         image = self.document_controller.current_image
         if image is not None:
             return DisplayedExportTarget(ImageArtifact("current_result", "Current Result", image))

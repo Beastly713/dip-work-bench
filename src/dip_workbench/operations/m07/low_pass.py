@@ -126,7 +126,6 @@ def create_low_pass_presenter() -> object:
     from dip_workbench.ui.operations.frequency import FrequencyFilterPresenter
 
     return FrequencyFilterPresenter(
-        "low_pass_result",
         "Low-Pass Filtered Image",
         "low_pass_input_spectrum",
         "low_pass_mask",

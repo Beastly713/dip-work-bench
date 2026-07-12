@@ -52,7 +52,7 @@ def test_open_display_save_home_and_actions(qtbot, tmp_path) -> None:  # type: i
     window, source = window_with_source(qtbot, tmp_path)
     assert window.action_map["open"].isEnabled()
     assert window.home_page.open_image_button.isEnabled()
-    assert not window.home_page.sample_image_button.isEnabled()
+    assert not hasattr(window.home_page, "sample_image_button")
     assert window.open_primary_image_path(source)
     assert window.page_stack.currentIndex() == PageIndex.OPERATION
     assert (

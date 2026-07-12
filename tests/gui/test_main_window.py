@@ -8,7 +8,7 @@ import numpy as np
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QPalette
 
-from dip_workbench.controllers import DocumentController
+from dip_workbench.controllers import DocumentController, OperationWorkspaceState
 from dip_workbench.core import ColourModel, ImageAsset
 from dip_workbench.execution import OperationExecutionManager, OperationRequest
 from dip_workbench.operations import operation_registry
@@ -16,6 +16,7 @@ from dip_workbench.services import (
     ExportService,
     ImageIOService,
     ImageTransformService,
+    InterpolationMode,
     SettingsService,
 )
 from dip_workbench.state import DocumentStore, HistorySnapshotStore
@@ -45,20 +46,57 @@ def test_main_window_structure_and_navigation(qtbot, tmp_path) -> None:  # type:
     assert window.windowTitle() == "DIP Workbench"
     assert window.minimumWidth() == 1180
     assert window.minimumHeight() == 720
-    assert window.page_stack.count() == 3
+    assert window.page_stack.count() == 2
     assert window.page_stack.currentIndex() == PageIndex.HOME
 
-    window.action_map["report"].trigger()
-    assert window.page_stack.currentIndex() == PageIndex.REPORT
     window.action_map["home"].trigger()
     assert window.page_stack.currentIndex() == PageIndex.HOME
+    assert not {
+        "sample",
+        "report",
+        "export_report",
+        "show_details",
+        "presentation",
+        "about_operation",
+        "shortcuts",
+        "about",
+        "add_report",
+    } & set(window.action_map)
 
     assert [action.text() for action in window.menuBar().actions()] == [
         "File",
         "Edit",
         "View",
         "Operations",
-        "Help",
+    ]
+    assert [action.text() for action in window.menus["File"].actions()] == [
+        "Open Primary Image",
+        "Save Current Image",
+        "Export Displayed Result",
+        "Exit",
+    ]
+    assert [action.text() for action in window.menus["Edit"].actions()] == [
+        "Undo",
+        "Redo",
+        "Reset Current Image",
+        "Clear Operation Preview",
+        "Crop…",
+        "Resize…",
+        "Rotate…",
+        "Flip/Mirror…",
+        "Select Region",
+    ]
+    assert [action.text() for action in window.menus["View"].actions()] == [
+        "Fit Image",
+        "Actual Size",
+        "Zoom In",
+        "Zoom Out",
+        "Show Navigation",
+        "Show Parameters",
+        "Before/After Comparison",
+    ]
+    assert [action.text() for action in window.menus["Operations"].actions()] == [
+        "Search Operations"
     ]
     assert [action.text() for action in window.global_toolbar.actions()] == [
         "Home",
@@ -70,10 +108,7 @@ def test_main_window_structure_and_navigation(qtbot, tmp_path) -> None:  # type:
         "Reset Current Image",
         "",
         "Before/After Comparison",
-        "Add to Report",
         "Export Displayed Result",
-        "",
-        "Presentation Mode",
     ]
 
 
@@ -82,7 +117,6 @@ def test_action_availability_and_panel_constraints(qtbot, tmp_path) -> None:  # 
     enabled = {
         "home",
         "open",
-        "report",
         "exit",
         "show_navigation",
         "operation_search",
@@ -137,10 +171,72 @@ def test_home_loaded_state_immediate_preview_and_palette(qtbot, tmp_path) -> Non
     window.open_operation(operation_registry.get("M01-01"))
     assert requests and requests[-1].operation_id == operation_registry.get("M01-01").id
     assert window.parameter_panel.isVisible()
-    window.show_report_builder()
+    window.show_home_page()
     assert not window.parameter_panel.isVisible()
     palette = window.palette()
     assert palette.color(QPalette.ColorRole.ButtonText) != palette.color(QPalette.ColorRole.Button)
+
+
+def test_displayed_export_target_tracks_visible_page_mode_and_preview(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    window = make_window(qtbot, tmp_path)
+    asset = ImageAsset(
+        "rgb", np.arange(4 * 6 * 3, dtype=np.uint8).reshape((4, 6, 3)), ColourModel.RGB
+    )
+    source = window.document_controller.image_io.save(asset, tmp_path / "rgb.png")
+    assert window.open_primary_image_path(source)
+    window.show_home_page()
+    assert window._current_export_target() is None
+    assert not window.action_map["export_result"].isEnabled()
+
+    window.show_operation_workspace()
+    window.operation_workspace.show_document_view()
+    target = window._current_export_target()
+    assert target is not None
+    assert target.artifact.label == "Current Result"
+    assert target.artifact.data is window.document_controller.current_image
+    assert window.action_map["export_result"].isEnabled()
+
+    window.operation_controller.select_operation(operation_registry.get("M07-03"))
+    window.operation_workspace.show_academic_operation(window.operation_controller)
+    window.show_operation_workspace()
+    window.refresh_document_actions()
+    assert (
+        window.operation_workspace.mode_stack.currentWidget()
+        is window.operation_workspace.academic_view
+    )
+    assert window._current_export_target() is None
+    assert not window.action_map["export_result"].isEnabled()
+
+    window.open_operation(operation_registry.get("M09-02"))
+    qtbot.waitUntil(
+        lambda: window.operation_controller.workspace_state is OperationWorkspaceState.RESULT,
+        timeout=5000,
+    )
+    academic_target = window._current_export_target()
+    assert academic_target is not None
+    assert academic_target.artifact.key == "range_mask"
+    assert window.action_map["export_result"].isEnabled()
+
+    window.open_utility("resize")
+    window._preview_transform(
+        window.document_controller.preview_resize,
+        width=3,
+        height=2,
+        interpolation=InterpolationMode.NEAREST,
+    )
+    preview = window.document_controller.document_store.active_preview
+    utility_target = window._current_export_target()
+    assert preview is not None
+    assert utility_target is not None
+    assert utility_target.artifact.key == "utility_preview"
+    assert utility_target.artifact.label == "Resize Preview"
+    assert utility_target.artifact.data is preview.result
+
+    window.clear_utility_preview()
+    restored_target = window._current_export_target()
+    assert restored_target is not None
+    assert restored_target.artifact.label == "Current Result"
+    assert restored_target.artifact.data is window.document_controller.current_image
 
 
 def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]

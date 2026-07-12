@@ -20,10 +20,10 @@ from dip_workbench.operations.identifiers import ModuleId, OperationId
 from dip_workbench.operations.inputs import InputSpec
 from dip_workbench.operations.m09.common import (
     extract_masked,
+    inclusive_range_pair,
+    inclusive_range_validator,
     mask_metrics,
     mask_overlay,
-    range_pair,
-    strict_range_validator,
 )
 from dip_workbench.operations.parameters import ParameterSpec, ParameterType
 from dip_workbench.operations.registry import operation_registry
@@ -39,9 +39,9 @@ class ColourRangeExecutor:
         image = context.inputs.get("image")
         if not isinstance(image, ImageAsset) or image.colour_model is not ColourModel.RGB:
             raise InputValidationError("Colour-range segmentation requires RGB input.")
-        r = range_pair(context.parameters.get("red_range"), "Red range")
-        g = range_pair(context.parameters.get("green_range"), "Green range")
-        b = range_pair(context.parameters.get("blue_range"), "Blue range")
+        r = inclusive_range_pair(context.parameters.get("red_range"), "Red range")
+        g = inclusive_range_pair(context.parameters.get("green_range"), "Green range")
+        b = inclusive_range_pair(context.parameters.get("blue_range"), "Blue range")
         lower = np.array([r[0], g[0], b[0]], dtype=np.uint8)
         upper = np.array([r[1], g[1], b[1]], dtype=np.uint8)
         context.cancellation_token.raise_if_cancelled()
@@ -122,7 +122,7 @@ COLOUR_RANGE_DEFINITION = OperationDefinition(
             (0, 255),
             minimum=0,
             maximum=255,
-            validator=strict_range_validator("Red range"),
+            validator=inclusive_range_validator("Red range"),
         ),
         ParameterSpec(
             "green_range",
@@ -131,7 +131,7 @@ COLOUR_RANGE_DEFINITION = OperationDefinition(
             (0, 255),
             minimum=0,
             maximum=255,
-            validator=strict_range_validator("Green range"),
+            validator=inclusive_range_validator("Green range"),
         ),
         ParameterSpec(
             "blue_range",
@@ -140,7 +140,7 @@ COLOUR_RANGE_DEFINITION = OperationDefinition(
             (0, 255),
             minimum=0,
             maximum=255,
-            validator=strict_range_validator("Blue range"),
+            validator=inclusive_range_validator("Blue range"),
         ),
     ),
     PreviewPolicy.IMMEDIATE,

@@ -63,6 +63,17 @@ class FourierSpectrumPresenter(OperationResultPresenter):
             self.phase_canvas.clear_image()
         self._refresh()
 
+    def clear_result(self) -> None:
+        self._magnitude = None
+        self._phase = None
+        self.comparison.clear()
+        self.metrics.clear()
+        self.phase_canvas.clear_image()
+        self.toggle.setChecked(False)
+        self.toggle.hide()
+        self.phase_canvas.hide()
+        super().clear_result()
+
     def _toggle(self, visible: bool) -> None:
         self.toggle.setArrowType(Qt.ArrowType.DownArrow if visible else Qt.ArrowType.RightArrow)
         self.phase_canvas.setVisible(visible)
@@ -78,7 +89,6 @@ class FourierSpectrumPresenter(OperationResultPresenter):
 class FrequencyFilterPresenter(BeforeAfterImageWithMetricsPresenter):
     def __init__(
         self,
-        _primary_key: str,
         label: str,
         input_key: str,
         mask_key: str,
@@ -116,6 +126,14 @@ class FrequencyFilterPresenter(BeforeAfterImageWithMetricsPresenter):
             if artifact and isinstance(artifact.data, ImageAsset):
                 canvas.set_image(artifact.data)
         self._refresh()
+
+    def clear_result(self) -> None:
+        self._artifacts.clear()
+        for canvas in self.canvases:
+            canvas.clear_image()
+        self.toggle.setChecked(False)
+        self.tabs.hide()
+        super().clear_result()
 
     def _toggle(self, visible: bool) -> None:
         self.toggle.setArrowType(Qt.ArrowType.DownArrow if visible else Qt.ArrowType.RightArrow)

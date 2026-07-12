@@ -138,7 +138,6 @@ def create_high_pass_presenter() -> object:
     from dip_workbench.ui.operations.frequency import FrequencyFilterPresenter
 
     return FrequencyFilterPresenter(
-        "high_pass_result",
         "Normalized High-Pass Response",
         "high_pass_input_spectrum",
         "high_pass_mask",

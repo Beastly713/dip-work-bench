@@ -33,17 +33,14 @@ class HomePage(QWidget):
         title.setObjectName("pageTitle")
         title.setStyleSheet("font-size: 28px; font-weight: 600;")
         description = QLabel(
-            "Demonstrate, compare, and document syllabus-based image-processing operations."
+            "Explore, compare, and apply focused digital image-processing operations."
         )
         description.setStyleSheet("font-size: 15px;")
 
         buttons = QHBoxLayout()
         self.open_image_button = QPushButton("Open Image")
-        self.sample_image_button = QPushButton("Use Sample Image")
         self.open_image_button.clicked.connect(self.open_image_requested)
-        self.sample_image_button.setEnabled(False)
         buttons.addWidget(self.open_image_button)
-        buttons.addWidget(self.sample_image_button)
         buttons.addStretch()
 
         drop_area = QFrame()

@@ -39,6 +39,13 @@ class RangeThresholdPresenter(BeforeAfterImageWithMetricsPresenter):
             self.canvas.set_image(self._overlay.data)
         self._refresh()
 
+    def clear_result(self) -> None:
+        self._overlay = None
+        self.canvas.clear_image()
+        self.toggle.setChecked(False)
+        self.canvas.hide()
+        super().clear_result()
+
     def _toggle(self, visible: bool) -> None:
         self.toggle.setArrowType(Qt.ArrowType.DownArrow if visible else Qt.ArrowType.RightArrow)
         self.canvas.setVisible(visible)
@@ -78,6 +85,14 @@ class ColourRangePresenter(BeforeAfterImageWithMetricsPresenter):
         if "colour_overlay" in self._artifacts:
             self.overlay.set_image(self._artifacts["colour_overlay"].data)  # type: ignore[arg-type]
         self._refresh()
+
+    def clear_result(self) -> None:
+        self._artifacts.clear()
+        self.extracted.clear_image()
+        self.overlay.clear_image()
+        self.toggle.setChecked(False)
+        self.tabs.hide()
+        super().clear_result()
 
     def _toggle(self, visible: bool) -> None:
         self.toggle.setArrowType(Qt.ArrowType.DownArrow if visible else Qt.ArrowType.RightArrow)
@@ -126,6 +141,14 @@ class AdaptiveThresholdPresenter(BeforeAfterImageWithMetricsPresenter):
             self.canvas.clear_image()
             self.toggle.setChecked(False)
         self._refresh()
+
+    def clear_result(self) -> None:
+        self._otsu = None
+        self.canvas.clear_image()
+        self.toggle.setChecked(False)
+        self.toggle.hide()
+        self.canvas.hide()
+        super().clear_result()
 
     def _toggle(self, visible: bool) -> None:
         self.toggle.setArrowType(Qt.ArrowType.DownArrow if visible else Qt.ArrowType.RightArrow)
