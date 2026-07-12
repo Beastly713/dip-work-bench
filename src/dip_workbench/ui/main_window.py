@@ -119,12 +119,15 @@ class MainWindow(QMainWindow):
 
     def show_home_page(self) -> None:
         self.page_stack.setCurrentIndex(PageIndex.HOME)
+        self.refresh_document_actions()
 
     def show_operation_workspace(self) -> None:
         self.page_stack.setCurrentIndex(PageIndex.OPERATION)
+        self.refresh_document_actions()
 
     def show_report_builder(self) -> None:
         self.page_stack.setCurrentIndex(PageIndex.REPORT)
+        self.refresh_document_actions()
 
     def _add_action(
         self,
@@ -420,7 +423,8 @@ class MainWindow(QMainWindow):
         )
         self.action_map["export_result"].setEnabled(self._current_export_target() is not None)
         self.action_map["compare"].setEnabled(
-            self.operation_workspace.mode_stack.currentWidget()
+            self.page_stack.currentIndex() == PageIndex.OPERATION
+            and self.operation_workspace.mode_stack.currentWidget()
             is self.operation_workspace.academic_view
             and self.operation_workspace.supports_before_after_comparison()
         )
@@ -563,23 +567,29 @@ class MainWindow(QMainWindow):
         return True
 
     def _current_export_target(self) -> DisplayedExportTarget | None:
-        target = self.operation_workspace.displayed_export_target()
-        if target is not None:
-            try:
-                self.export_service.default_extension(
-                    target.artifact, has_render_source=target.render_source is not None
-                )
-            except ExportError:
-                return None
-            return target
-        result = self.operation_controller.active_result
-        if result is not None and result.primary_artifact.exportable:
-            try:
-                self.export_service.default_extension(result.primary_artifact)
-            except ExportError:
-                pass
-            else:
-                return DisplayedExportTarget(result.primary_artifact)
+        if self.page_stack.currentIndex() != PageIndex.OPERATION:
+            return None
+        if (
+            self.operation_workspace.mode_stack.currentWidget()
+            is self.operation_workspace.academic_view
+        ):
+            target = self.operation_workspace.displayed_export_target()
+            if target is not None:
+                try:
+                    self.export_service.default_extension(
+                        target.artifact, has_render_source=target.render_source is not None
+                    )
+                except ExportError:
+                    return None
+                return target
+            result = self.operation_controller.active_result
+            if result is not None and result.primary_artifact.exportable:
+                try:
+                    self.export_service.default_extension(result.primary_artifact)
+                except ExportError:
+                    pass
+                else:
+                    return DisplayedExportTarget(result.primary_artifact)
         image = self.document_controller.current_image
         if image is not None:
             return DisplayedExportTarget(ImageArtifact("current_result", "Current Result", image))
@@ -649,6 +659,7 @@ class MainWindow(QMainWindow):
             self.begin_region_selection()
         else:
             self.operation_workspace.image_canvas.cancel_interaction()
+        self.refresh_document_actions()
 
     def begin_region_selection(self) -> None:
         self.operation_workspace.image_canvas.begin_rectangle_selection(

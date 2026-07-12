@@ -7,6 +7,9 @@ from dip_workbench.core import ColourModel, ExportError, ImageAsset
 from dip_workbench.operations import (
     BitstreamArtifact,
     CurveArtifact,
+    GraphData,
+    GraphSeries,
+    HistogramArtifact,
     ImageArtifact,
     LabelMapArtifact,
     MatrixArtifact,
@@ -45,6 +48,11 @@ def test_image_exports_and_label_rejection(tmp_path) -> None:  # type: ignore[no
             ImageArtifact("hidden", "Hidden", asset(), exportable=False),
             tmp_path / "hidden.png",
         )
+    destination = service.export(
+        image_artifact, tmp_path / "preferred-image", preferred_extension=".png"
+    )
+    assert destination == tmp_path / "preferred-image.png"
+    assert destination.exists()
 
 
 def test_structured_exports(tmp_path) -> None:  # type: ignore[no-untyped-def]
@@ -70,6 +78,12 @@ def test_structured_exports(tmp_path) -> None:  # type: ignore[no-untyped-def]
         tmp_path / "tree.txt",
     )
     assert "  leaf: 1" in (tmp_path / "tree.txt").read_text(encoding="utf-8")
+    curve_destination = service.export(
+        CurveArtifact("curve2", "Curve 2", {"x": [0, 1], "y": [1, 0]}),
+        tmp_path / "curve-preferred",
+        preferred_extension=".csv",
+    )
+    assert curve_destination == tmp_path / "curve-preferred.csv"
 
 
 def test_export_validation(tmp_path) -> None:  # type: ignore[no-untyped-def]
@@ -81,3 +95,20 @@ def test_export_validation(tmp_path) -> None:  # type: ignore[no-untyped-def]
         service.export(artifact, tmp_path)
     with pytest.raises(ExportError):
         service.export(artifact, tmp_path / "out.gif")
+    with pytest.raises(ExportError):
+        service.export(artifact, tmp_path / "typed.gif", preferred_extension=".png")
+
+
+def test_histogram_csv_exports(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    service = ExportService(ImageIOService())
+    for name, payload in (
+        ("counts", [0, 2, 0]),
+        ("channels", {"red": [1, 0], "green": [0, 1]}),
+        ("graph", GraphData((GraphSeries("hist", (0, 1), (0, 5)),))),
+    ):
+        destination = service.export(
+            HistogramArtifact(name, name.title(), payload), tmp_path / f"{name}.csv"
+        )
+        text = destination.read_text(encoding="utf-8")
+        assert text.splitlines()[0] == "series,x,y"
+        assert ",0.0," in text

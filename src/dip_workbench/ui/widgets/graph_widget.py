@@ -21,6 +21,7 @@ class GraphWidget(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._data: GraphData | None = None
+        self.plot_items: list[object] = []
         layout = QVBoxLayout(self)
         self.stack = QStackedWidget()
         self.plot = pg.PlotWidget()
@@ -49,30 +50,35 @@ class GraphWidget(QWidget):
     def render_image(self, *, minimum_width: int = 1200, minimum_height: int = 800) -> QImage:
         width = max(minimum_width, self.plot.width(), 1)
         height = max(minimum_height, self.plot.height(), 1)
+        old_size = self.plot.size()
+        self.plot.resize(width, height)
         image = QImage(width, height, QImage.Format.Format_ARGB32)
         image.fill(0xFFFFFFFF)
         painter = QPainter(image)
         self.plot.render(painter)
         painter.end()
+        self.plot.resize(old_size)
         return image
 
     def clear(self) -> None:
         self._data = None
         self.plot.clear()
+        self.plot_items = []
         self.message.setText("No graph data")
         self.stack.setCurrentWidget(self.message)
 
     def _draw_graph(self, graph: GraphData) -> None:
         self.plot.clear()
+        self.plot_items = []
         self.plot.setTitle(graph.title)
         self.plot.setLabel("bottom", graph.x_label)
         self.plot.setLabel("left", graph.y_label)
-        if len(graph.series) > 1:
-            self.plot.addLegend()
+        legend = self.plot.addLegend() if len(graph.series) > 1 else None
+        bar_width = 0.8 / max(len(graph.series), 1)
         for index, series in enumerate(graph.series):
             pen = pg.mkPen(pg.intColor(index), width=2)
             if graph.style is GraphStyle.SCATTER:
-                self.plot.plot(
+                item = self.plot.plot(
                     series.x,
                     series.y,
                     pen=None,
@@ -81,15 +87,35 @@ class GraphWidget(QWidget):
                     name=series.label,
                 )
             elif graph.style is GraphStyle.BAR:
-                self.plot.addItem(
-                    pg.BarGraphItem(
-                        x=list(series.x), height=list(series.y), width=0.8, brush=pg.intColor(index)
-                    )
+                offset = (index - (len(graph.series) - 1) / 2.0) * bar_width
+                item = pg.BarGraphItem(
+                    x=[x + offset for x in series.x],
+                    height=list(series.y),
+                    width=bar_width,
+                    brush=pg.intColor(index),
                 )
+                self.plot.addItem(item)
+                if legend is not None:
+                    legend.addItem(item, series.label)
             elif graph.style is GraphStyle.STEP:
-                self.plot.plot(series.x, series.y, pen=pen, stepMode=False, name=series.label)
+                x, y = _step_coordinates(series.x, series.y)
+                item = self.plot.plot(x, y, pen=pen, name=series.label)
             else:
-                self.plot.plot(series.x, series.y, pen=pen, name=series.label)
+                item = self.plot.plot(series.x, series.y, pen=pen, name=series.label)
+            self.plot_items.append(item)
+
+
+def _step_coordinates(
+    x_values: tuple[float, ...], y_values: tuple[float, ...]
+) -> tuple[list[float], list[float]]:
+    if len(x_values) == 1:
+        return [x_values[0]], [y_values[0]]
+    x_steps = [x_values[0]]
+    y_steps = [y_values[0]]
+    for index in range(1, len(x_values)):
+        x_steps.extend([x_values[index], x_values[index]])
+        y_steps.extend([y_values[index - 1], y_values[index]])
+    return x_steps, y_steps
 
 
 class HistogramWidget(GraphWidget):

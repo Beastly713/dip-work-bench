@@ -92,6 +92,34 @@ def test_image_negative_preview_apply_history_and_export(qtbot, tmp_path) -> Non
     assert np.array_equal(result_canvas.current_asset.data, 255 - before)
     presenter.mapping_toggle.click()
     assert presenter.mapping_curve.isVisibleTo(presenter)
+    assert window.action_map["compare"].isEnabled()
+    assert window.action_map["export_result"].isEnabled()
+    window.show_home_page()
+    assert not window.action_map["compare"].isEnabled()
+    assert not window.action_map["export_result"].isEnabled()
+    window.show_report_builder()
+    assert not window.action_map["compare"].isEnabled()
+    assert not window.action_map["export_result"].isEnabled()
+    window.show_operation_workspace()
+    assert window.action_map["compare"].isEnabled()
+    assert window.action_map["export_result"].isEnabled()
+    window.open_utility("flip")
+    assert not window.action_map["compare"].isEnabled()
+    assert window.action_map["export_result"].isEnabled()
+    utility_export = tmp_path / "utility-visible-export"
+    assert window.export_displayed_result_path(utility_export)
+    reloaded_utility = window.document_controller.image_io.load(utility_export.with_suffix(".png"))
+    assert np.array_equal(reloaded_utility.data, window.document_controller.current_image.data)  # type: ignore[union-attr]
+
+    window.open_operation(operation_registry.get("M03-01"))
+    editor = window.parameter_panel.operation_panel._editor
+    assert isinstance(editor, ImageNegativeParameterEditor)
+    editor.colour_handling_combo.setCurrentIndex(editor.colour_handling_combo.findData("channels"))
+    window.parameter_panel.operation_panel.preview_button.click()
+    qtbot.waitUntil(
+        lambda: window.operation_controller.workspace_state is OperationWorkspaceState.RESULT,
+        timeout=3000,
+    )
 
     window.parameter_panel.operation_panel.apply_button.click()
     qtbot.waitUntil(
@@ -118,6 +146,8 @@ def test_image_negative_preview_apply_history_and_export(qtbot, tmp_path) -> Non
     reloaded = window.document_controller.image_io.load(exported)
     assert np.array_equal(reloaded.data, window.document_controller.current_image.data)  # type: ignore[union-attr]
     window.open_utility("flip")
+    assert not window.action_map["compare"].isEnabled()
+    assert window.action_map["export_result"].isEnabled()
     assert not window.navigation_sidebar.operation_buttons["M03-01"].styleSheet()
     assert not window.navigation_sidebar.module_buttons[ModuleId.M03].styleSheet()
     assert window.home_page.recent_frame.isVisibleTo(window.home_page)

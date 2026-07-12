@@ -196,11 +196,16 @@ class BeforeAfterComparisonWidget(QWidget):
         self._input_label = input_label
         self._result_label = result_label
         self.side_by_side.set_images(input_label, input_asset, result_label, result_asset)
+        self.split.set_labels(input_label, result_label)
         self.split.set_images(input_asset, result_asset)
         model = self.mode_combo.model()
+        dimensions_match = (input_asset.width, input_asset.height) == (
+            result_asset.width,
+            result_asset.height,
+        )
         if isinstance(model, QStandardItemModel):
-            model.item(1).setEnabled(input_asset.shape == result_asset.shape)
-        if input_asset.shape != result_asset.shape and self.mode() is ComparisonMode.SPLIT:
+            model.item(1).setEnabled(dimensions_match)
+        if not dimensions_match and self.mode() is ComparisonMode.SPLIT:
             self.set_mode(ComparisonMode.SIDE_BY_SIDE)
 
     def mode(self) -> ComparisonMode:

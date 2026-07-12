@@ -226,7 +226,12 @@ def coerce_matrix_data(payload: object) -> MatrixData:
             raise VisualizationValidationError("Matrix arrays must be two-dimensional.")
         return MatrixData(tuple(tuple(value for value in row) for row in payload.tolist()))
     if isinstance(payload, Sequence) and not isinstance(payload, (str, bytes, bytearray)):
-        return MatrixData(tuple(tuple(row) for row in payload if isinstance(row, Sequence)))
+        rows: list[tuple[object, ...]] = []
+        for row in payload:
+            if not isinstance(row, Sequence) or isinstance(row, (str, bytes, bytearray)):
+                raise VisualizationValidationError("Matrix rows must be nested sequences.")
+            rows.append(tuple(row))
+        return MatrixData(tuple(rows))
     raise VisualizationValidationError("Matrix payload is unsupported.")
 
 

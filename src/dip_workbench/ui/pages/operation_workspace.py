@@ -127,10 +127,16 @@ class OperationWorkspace(QWidget):
         self._states.setCurrentIndex(0)
 
     def displayed_export_target(self) -> DisplayedExportTarget | None:
+        if self.mode_stack.currentWidget() is not self.academic_view:
+            return None
         return self.result_workspace.displayed_export_target()
 
     def supports_before_after_comparison(self) -> bool:
+        if self.mode_stack.currentWidget() is not self.academic_view:
+            return False
         return self.result_workspace.supports_before_after_comparison()
 
     def activate_before_after_comparison(self) -> bool:
+        if self.mode_stack.currentWidget() is not self.academic_view:
+            return False
         return self.result_workspace.activate_before_after_comparison()

@@ -7,14 +7,20 @@ from dip_workbench.core import ColourModel, ImageAsset
 from dip_workbench.ui.widgets import (
     BeforeAfterComparisonWidget,
     ComparisonMode,
+    ImageCanvas,
     SideBySideComparisonWidget,
     SplitComparisonCanvas,
     TripleComparisonWidget,
+    ViewTransformController,
 )
 
 
 def image(name: str, width: int = 8, height: int = 6) -> ImageAsset:
     return ImageAsset(name, np.zeros((height, width), dtype=np.uint8), ColourModel.GRAY)
+
+
+def rgb_image(name: str, width: int = 8, height: int = 6) -> ImageAsset:
+    return ImageAsset(name, np.zeros((height, width, 3), dtype=np.uint8), ColourModel.RGB)
 
 
 def test_side_by_side_zoom_maximize_and_clear(qtbot) -> None:  # type: ignore[no-untyped-def]
@@ -45,11 +51,24 @@ def test_triple_comparison_and_split_modes(qtbot) -> None:  # type: ignore[no-un
     split = SplitComparisonCanvas()
     qtbot.addWidget(split)
     split.set_images(image("a"), image("b"))
+    split.set_labels("Input", "Result")
     for percent in (0, 50, 100):
         split.set_split_percent(percent)
         assert split.split_percent == percent
+        rendered = split.grab().toImage()
+        assert not rendered.isNull()
     split.set_images(image("a"), image("wide", 10, 6))
     assert not split.enabled_split
+
+
+def test_split_allows_rgb_input_and_gray_result_with_equal_size(qtbot) -> None:  # type: ignore[no-untyped-def]
+    widget = BeforeAfterComparisonWidget()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.set_images(rgb_image("rgb"), image("gray"))
+    widget.set_mode(ComparisonMode.SPLIT)
+    assert widget.mode() is ComparisonMode.SPLIT
+    assert widget.split.enabled_split
 
 
 def test_before_after_hold_b_is_scoped(qtbot) -> None:  # type: ignore[no-untyped-def]
@@ -64,3 +83,24 @@ def test_before_after_hold_b_is_scoped(qtbot) -> None:  # type: ignore[no-untype
     assert widget.side_by_side.panels[1].label.text() == "Input - Hold B"
     qtbot.keyRelease(widget, Qt.Key.Key_B)
     assert widget.side_by_side.panels[1].label.text() == "Negative Result"
+
+
+def test_transform_controller_disconnects_only_owned_callbacks(qtbot) -> None:  # type: ignore[no-untyped-def]
+    first = ImageCanvas()
+    second = ImageCanvas()
+    qtbot.addWidget(first)
+    qtbot.addWidget(second)
+    first.set_image(image("first"))
+    second.set_image(image("second"))
+    observed: list[float] = []
+    synchronized: list[float] = []
+    first.zoom_changed.connect(observed.append)
+    second.zoom_changed.connect(synchronized.append)
+    controller = ViewTransformController()
+    controller.set_canvases((first, second))
+    controller.clear()
+    controller.set_canvases((first, second))
+    first.set_zoom_percent(150)
+    assert observed
+    assert round(second.zoom_percent) == 150
+    assert len(synchronized) == 1

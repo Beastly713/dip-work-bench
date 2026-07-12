@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPointF, QRect, QRectF, Qt, Signal
-from PySide6.QtGui import QMouseEvent, QPainter, QPixmap, QWheelEvent
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPixmap, QWheelEvent
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QWidget
 
 from dip_workbench.core import ImageAsset
@@ -25,6 +25,8 @@ class SplitComparisonCanvas(QGraphicsView):
         self._result_pixmap: QPixmap | None = None
         self._split_percent = 50.0
         self._message = "No images to compare"
+        self._input_label = "Input"
+        self._result_label = "Result"
         self._dragging_split = False
         self._fit_mode = False
         self.setBackgroundBrush(Qt.GlobalColor.darkGray)
@@ -40,7 +42,7 @@ class SplitComparisonCanvas(QGraphicsView):
 
     def set_images(self, input_asset: ImageAsset, result_asset: ImageAsset) -> None:
         self.clear()
-        if input_asset.shape != result_asset.shape:
+        if (input_asset.width, input_asset.height) != (result_asset.width, result_asset.height):
             self._message = "Split comparison requires matching image dimensions."
             self.viewport().update()
             return
@@ -53,6 +55,11 @@ class SplitComparisonCanvas(QGraphicsView):
     def set_split_percent(self, percent: float) -> None:
         self._split_percent = max(0.0, min(100.0, float(percent)))
         self.split_changed.emit(self._split_percent)
+        self.viewport().update()
+
+    def set_labels(self, input_label: str, result_label: str) -> None:
+        self._input_label = input_label
+        self._result_label = result_label
         self.viewport().update()
 
     def clear(self) -> None:
@@ -114,6 +121,18 @@ class SplitComparisonCanvas(QGraphicsView):
         painter.restore()
         painter.setPen(Qt.GlobalColor.yellow)
         painter.drawLine(QPointF(split_x, scene_rect.top()), QPointF(split_x, scene_rect.bottom()))
+        self._draw_labels(painter)
+
+    def _draw_labels(self, painter: QPainter) -> None:
+        painter.resetTransform()
+        painter.setPen(Qt.GlobalColor.white)
+        painter.setBrush(QColor(15, 23, 42, 190))
+        left_rect = QRect(12, 12, 96, 28)
+        right_rect = QRect(max(12, self.viewport().width() - 108), 12, 96, 28)
+        painter.drawRoundedRect(left_rect, 4, 4)
+        painter.drawRoundedRect(right_rect, 4, 4)
+        painter.drawText(left_rect, Qt.AlignmentFlag.AlignCenter, self._input_label)
+        painter.drawText(right_rect, Qt.AlignmentFlag.AlignCenter, self._result_label)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if self.enabled_split and event.button() == Qt.MouseButton.LeftButton:

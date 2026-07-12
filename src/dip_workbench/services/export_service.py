@@ -27,6 +27,7 @@ from dip_workbench.operations import (
     TreeArtifact,
     TreeNode,
     coerce_graph_data,
+    coerce_histogram_data,
     coerce_matrix_data,
     coerce_table_data,
     coerce_tree_data,
@@ -97,9 +98,13 @@ class ExportService:
         if target.exists() and target.is_dir():
             raise ExportError("Output destination is a directory.")
         has_render_source = render_source is not None
-        suffix = (preferred_extension or target.suffix).lower()
+        suffix = target.suffix.lower()
         if not suffix:
-            suffix = self.default_extension(artifact, has_render_source=has_render_source)
+            suffix = (
+                preferred_extension.lower()
+                if preferred_extension
+                else self.default_extension(artifact, has_render_source=has_render_source)
+            )
             target = target.with_suffix(suffix)
         if not target.parent.is_dir():
             raise ExportError("Output parent directory does not exist.")
@@ -171,7 +176,11 @@ class ExportService:
         raise ExportError(f"{artifact.label} cannot be exported.")
 
     def _write_graph_csv(self, artifact: ResultArtifact, destination: Path) -> None:
-        graph = coerce_graph_data(artifact.data)
+        graph = (
+            coerce_histogram_data(artifact.data)
+            if isinstance(artifact, HistogramArtifact)
+            else coerce_graph_data(artifact.data)
+        )
         rows: list[tuple[object, object, object]] = [("series", "x", "y")]
         for series in graph.series:
             rows.extend((series.label, x, y) for x, y in zip(series.x, series.y, strict=True))

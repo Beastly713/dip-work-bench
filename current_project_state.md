@@ -17,15 +17,15 @@ Use this as the project root:
 
 Important history note: earlier work accidentally treated `/home/beastly713/ip-work` as the root. That was corrected. The actual Python package, tests, scripts, docs, and Git repository state for DIP Workbench live under `dip-work-bench`.
 
-Current branch and head before the C12 working tree changes:
+Current branch and C12 implementation base:
 
 ```text
 Branch: main
-HEAD: e0caf55 docs: record current project state
+HEAD: 04c84f3 feat(ui): add comparison graph table matrix and tree views
 Remote tracking: origin/main
 ```
 
-The working tree now contains uncommitted C12 implementation changes. Do not stage, commit, push, create branches, amend history, or rewrite history unless the user explicitly asks.
+The original C12 implementation is committed at `04c84f3`. The current working tree contains an uncommitted C12 correctness correction for identified comparison, graph rendering, export, and safe-data-state defects. Do not stage, commit, push, create branches, amend history, or rewrite history unless the user explicitly asks.
 
 ## Product Contract
 
@@ -251,6 +251,7 @@ After C32: 67 academic tools
 - One injected `ExportService` owns artifact file writing.
 - Displayed-result export supports images, graphs, tables, matrices, metrics, text, bitstreams, and trees.
 - Raw label-map image export is rejected clearly until later explicit label-map display mapping exists.
+- C12 correction fixes export suffix precedence, histogram CSV adaptation, hidden presenter export targets, RGB-to-grayscale split compatibility, split labels, true step graph rendering, graph PNG export scaling, owned-only view-transform disconnects, malformed-data inline states, and the deprecated table filter invalidation path.
 
 ## Not Yet Implemented
 
@@ -359,7 +360,7 @@ For offscreen launch checks, DBus/offscreen plugin warnings can appear. The impo
 
 ## Last Known Validation
 
-After C12, the project had the following known-good validation state:
+After the C12 correction, the project had the following known-good validation state:
 
 ```text
 python -m pip install -e ".[dev]"
@@ -372,6 +373,9 @@ python scripts/verify_registry.py
 pytest tests/unit/operations/test_visualization.py -q
 pytest tests/unit/services/test_export_service.py -q
 pytest tests/unit/test_application.py -q
+QT_QPA_PLATFORM=offscreen pytest tests/gui/test_comparison_views.py -q
+QT_QPA_PLATFORM=offscreen pytest tests/gui/test_graph_widgets.py -q
+QT_QPA_PLATFORM=offscreen pytest tests/gui/test_export_integration.py -q
 QT_QPA_PLATFORM=offscreen pytest tests/gui/test_image_negative_flow.py -q
 QT_QPA_PLATFORM=offscreen pytest tests/gui/test_main_window.py -q
 pytest -q
@@ -386,8 +390,8 @@ Known results at that point:
 ```text
 PyQtGraph: 0.14.0
 Registry valid: 11 modules, 1 operation.
-Full pytest: 218 passed, 1 skipped, 1 warning.
-GUI suite: 50 passed, 1 warning.
+Full pytest: 222 passed, 1 skipped.
+GUI suite: 53 passed.
 ruff check: pass.
 mypy src: pass.
 python scripts/check.py: pass.
@@ -395,7 +399,7 @@ python scripts/verify_environment.py: pass.
 git diff --check: pass.
 ```
 
-The offscreen launch smoke initialized without a traceback and was stopped with a 5 second timeout after the Qt event loop remained open. Only offscreen DBus/plugin warnings appeared.
+No `invalidateFilter()` deprecation warning was present in the focused or complete GUI runs.
 
 ## GitHub Action Status
 

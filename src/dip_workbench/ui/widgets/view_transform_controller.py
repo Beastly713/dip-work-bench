@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import contextmanager, suppress
+from typing import Any
 
 from PySide6.QtCore import QObject
 
@@ -15,27 +17,39 @@ class ViewTransformController(QObject):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._canvases: list[ImageCanvas] = []
+        self._connections: list[tuple[Any, Callable[..., None]]] = []
         self._syncing = False
 
     def set_canvases(self, canvases: list[ImageCanvas] | tuple[ImageCanvas, ...]) -> None:
         self.clear()
         self._canvases = list(canvases)
         for canvas in self._canvases:
-            canvas.zoom_changed.connect(lambda value, source=canvas: self._sync_zoom(source, value))
-            canvas.horizontalScrollBar().valueChanged.connect(
-                lambda _value, source=canvas: self._sync_scroll(source, horizontal=True)
-            )
-            canvas.verticalScrollBar().valueChanged.connect(
-                lambda _value, source=canvas: self._sync_scroll(source, horizontal=False)
+
+            def zoom_callback(value: float, source: ImageCanvas = canvas) -> None:
+                self._sync_zoom(source, value)
+
+            def horizontal_callback(_value: int, source: ImageCanvas = canvas) -> None:
+                self._sync_scroll(source, horizontal=True)
+
+            def vertical_callback(_value: int, source: ImageCanvas = canvas) -> None:
+                self._sync_scroll(source, horizontal=False)
+
+            canvas.zoom_changed.connect(zoom_callback)
+            canvas.horizontalScrollBar().valueChanged.connect(horizontal_callback)
+            canvas.verticalScrollBar().valueChanged.connect(vertical_callback)
+            self._connections.extend(
+                [
+                    (canvas.zoom_changed, zoom_callback),
+                    (canvas.horizontalScrollBar().valueChanged, horizontal_callback),
+                    (canvas.verticalScrollBar().valueChanged, vertical_callback),
+                ]
             )
 
     def clear(self) -> None:
-        for canvas in self._canvases:
+        for signal, callback in self._connections:
             with suppress(RuntimeError, TypeError):
-                canvas.zoom_changed.disconnect()
-            for scrollbar in (canvas.horizontalScrollBar(), canvas.verticalScrollBar()):
-                with suppress(RuntimeError, TypeError):
-                    scrollbar.valueChanged.disconnect()
+                signal.disconnect(callback)
+        self._connections = []
         self._canvases = []
 
     def fit_all(self) -> None:

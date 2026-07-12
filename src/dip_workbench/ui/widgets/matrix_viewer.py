@@ -31,7 +31,14 @@ class MatrixViewer(QWidget):
         layout.addWidget(self.tabs)
 
     def set_matrix_data(self, data: object) -> None:
-        matrix = coerce_matrix_data(data)
+        try:
+            matrix = coerce_matrix_data(data)
+        except Exception as error:
+            self._data = None
+            self.table.clear()
+            self.heat_message.setText(f"Unsupported matrix data: {error}")
+            self.heat_stack.setCurrentWidget(self.heat_message)
+            return
         self._data = matrix
         columns = matrix.column_labels or tuple(f"C{i + 1}" for i in range(len(matrix.values[0])))
         rows = matrix.values

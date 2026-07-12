@@ -11,7 +11,7 @@ from PySide6.QtCore import (
     Qt,
 )
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import QLineEdit, QTableView, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QLineEdit, QTableView, QVBoxLayout, QWidget
 
 from dip_workbench.operations import TableData, coerce_table_data
 
@@ -73,8 +73,9 @@ class ContainsFilterProxy(QSortFilterProxyModel):
         self._needle = ""
 
     def set_filter_text(self, text: str) -> None:
+        self.beginFilterChange()
         self._needle = text.casefold()
-        self.invalidateFilter()
+        self.endFilterChange()
 
     def filterAcceptsRow(
         self, source_row: int, source_parent: QModelIndex | QPersistentModelIndex
@@ -93,6 +94,9 @@ class DataTableWidget(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
+        self.message = QLabel()
+        self.message.setWordWrap(True)
+        self.message.hide()
         self.search = QLineEdit()
         self.search.setPlaceholderText("Search")
         self.model = TableDataModel(self)
@@ -102,12 +106,21 @@ class DataTableWidget(QWidget):
         self.table = QTableView()
         self.table.setModel(self.proxy)
         self.table.setSortingEnabled(True)
+        layout.addWidget(self.message)
         layout.addWidget(self.search)
         layout.addWidget(self.table, 1)
         self.search.textChanged.connect(self.proxy.set_filter_text)
 
     def set_table_data(self, data: object) -> None:
-        self.model.set_table_data(coerce_table_data(data))
+        try:
+            table = coerce_table_data(data)
+        except Exception as error:
+            self.message.setText(f"Unsupported table data: {error}")
+            self.message.show()
+            self.model.set_table_data(TableData(("Value",), ()))
+            return
+        self.message.hide()
+        self.model.set_table_data(table)
         self.table.resizeColumnsToContents()
 
     def table_data(self) -> TableData:

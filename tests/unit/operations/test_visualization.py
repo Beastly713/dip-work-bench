@@ -57,6 +57,8 @@ def test_compatibility_adapters() -> None:
     assert table.columns == ("b", "a", "c")
     assert table.rows[1] == ("", "", 3)
     assert coerce_matrix_data(np.eye(2)).values == ((1.0, 0.0), (0.0, 1.0))
+    with pytest.raises(VisualizationValidationError):
+        coerce_matrix_data([[1, 2], 3])
     child: dict[str, object] = {"label": "child"}
     root: dict[str, object] = {"label": "root", "children": [child]}
     assert coerce_tree_data(root).children[0].label == "child"

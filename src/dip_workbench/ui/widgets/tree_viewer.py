@@ -34,7 +34,13 @@ class TreeViewer(QWidget):
         self.collapse_button.clicked.connect(self.tree.collapseAll)
 
     def set_tree_data(self, data: object) -> None:
-        root = coerce_tree_data(data)
+        try:
+            root = coerce_tree_data(data)
+        except Exception as error:
+            self._root = None
+            self.tree.clear()
+            self.tree.addTopLevelItem(QTreeWidgetItem([f"Unsupported tree data: {error}", ""]))
+            return
         self._root = root
         self.tree.clear()
         self.tree.addTopLevelItem(self._item_for_node(root))
