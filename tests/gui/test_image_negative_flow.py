@@ -64,7 +64,11 @@ def test_image_negative_preview_apply_history_and_export(qtbot, tmp_path) -> Non
         window.document_controller.preview_flip, direction=FlipDirection.HORIZONTAL
     )
     assert not np.array_equal(window.operation_workspace.image_canvas.current_asset.data, before)  # type: ignore[union-attr]
-    window.action_map["image_negative"].trigger()
+    window.open_operation(operation_registry.get("M03-01"))
+    qtbot.waitUntil(
+        lambda: window.operation_controller.workspace_state is OperationWorkspaceState.RESULT,
+        timeout=3000,
+    )
     assert np.array_equal(window.operation_workspace.image_canvas.current_asset.data, before)  # type: ignore[union-attr]
     assert window.operation_workspace.operation_header.name_label.text() == "Image Negative"
 
@@ -112,6 +116,10 @@ def test_image_negative_preview_apply_history_and_export(qtbot, tmp_path) -> Non
     assert np.array_equal(reloaded_utility.data, window.document_controller.current_image.data)  # type: ignore[union-attr]
 
     window.open_operation(operation_registry.get("M03-01"))
+    qtbot.waitUntil(
+        lambda: window.operation_controller.workspace_state is OperationWorkspaceState.RESULT,
+        timeout=3000,
+    )
     editor = window.parameter_panel.operation_panel._editor
     assert isinstance(editor, ImageNegativeParameterEditor)
     editor.colour_handling_combo.setCurrentIndex(editor.colour_handling_combo.findData("channels"))

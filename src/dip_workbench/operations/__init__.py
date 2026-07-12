@@ -15,6 +15,12 @@ from dip_workbench.operations.identifiers import (
     parse_operation_id,
 )
 from dip_workbench.operations.inputs import InputSpec
+from dip_workbench.operations.m01 import *
+from dip_workbench.operations.m02 import *
+from dip_workbench.operations.m03.gamma_correction import (
+    GAMMA_CORRECTION_DEFINITION,
+    GammaCorrectionExecutor,
+)
 from dip_workbench.operations.m03.image_negative import (
     IMAGE_NEGATIVE_DEFINITION,
     ImageNegativeExecutor,

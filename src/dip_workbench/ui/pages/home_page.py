@@ -31,11 +31,11 @@ class HomePage(QWidget):
 
         title = QLabel("DIP Workbench")
         title.setObjectName("pageTitle")
-        title.setStyleSheet("font-size: 28px; font-weight: 600; color: #1f2937;")
+        title.setStyleSheet("font-size: 28px; font-weight: 600;")
         description = QLabel(
             "Demonstrate, compare, and document syllabus-based image-processing operations."
         )
-        description.setStyleSheet("font-size: 15px; color: #4b5563;")
+        description.setStyleSheet("font-size: 15px;")
 
         buttons = QHBoxLayout()
         self.open_image_button = QPushButton("Open Image")
@@ -49,19 +49,14 @@ class HomePage(QWidget):
         drop_area = QFrame()
         drop_area.setObjectName("dropArea")
         drop_area.setMinimumHeight(160)
-        drop_area.setStyleSheet(
-            "QFrame#dropArea { background: #1f2937; border: 1px dashed #94a3b8; "
-            "border-radius: 6px; }"
-        )
         drop_layout = QVBoxLayout(drop_area)
-        drop_label = QLabel("Drag and Drop Image Here")
-        drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        drop_label.setStyleSheet("color: #d1d5db; font-size: 15px;")
-        drop_layout.addWidget(drop_label)
+        self.drop_label = QLabel("Drag and drop an image here")
+        self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.drop_label.setStyleSheet("font-size: 15px;")
+        drop_layout.addWidget(self.drop_label)
 
         empty_message = QLabel("No image loaded. Open an image or drag one here to begin.")
         self.empty_message_label = empty_message
-        empty_message.setStyleSheet("color: #6b7280;")
 
         layout.addWidget(title)
         layout.addWidget(description)
@@ -109,10 +104,14 @@ class HomePage(QWidget):
     def set_current_document(self, asset: "ImageAsset | None") -> None:
         if asset is None:
             self.current_document.hide()
+            self.empty_message_label.show()
+            self.drop_label.setText("Drag and drop an image here")
             return
         self.current_document_label.setText(
             f"{asset.name} — {asset.width} × {asset.height} • {asset.colour_model.value}"  # noqa: RUF001
         )
+        self.empty_message_label.hide()
+        self.drop_label.setText("Drag and drop another image here to replace the current document")
         self.current_document.show()
 
     open_image_requested = Signal()

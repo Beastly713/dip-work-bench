@@ -14,7 +14,6 @@ class ParameterPanel(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setMinimumWidth(self.MINIMUM_WIDTH)
-        self.setStyleSheet("background: #f8fafc;")
         layout = QVBoxLayout(self)
         self.stack = QStackedWidget()
         placeholder = QWidget()
@@ -23,7 +22,6 @@ class ParameterPanel(QWidget):
         heading.setStyleSheet("font-size: 17px; font-weight: 600;")
         message = QLabel("Select an operation to view its parameters.")
         message.setWordWrap(True)
-        message.setStyleSheet("color: #64748b;")
         placeholder_layout.addWidget(heading)
         placeholder_layout.addWidget(message)
         placeholder_layout.addStretch()

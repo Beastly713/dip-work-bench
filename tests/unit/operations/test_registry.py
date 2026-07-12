@@ -77,7 +77,14 @@ def test_registry_and_definition_validation() -> None:
             lambda: None,
             lambda: None,
         )
-    assert tuple(str(item.id) for item in operation_registry.all()) == ("M03-01",)
+    assert tuple(str(item.id) for item in operation_registry.all()) == (
+        "M01-01",
+        "M01-02",
+        "M01-03",
+        "M02-02",
+        "M03-01",
+        "M03-03",
+    )
 
 
 def test_reduced_scope_contract() -> None:
@@ -97,3 +104,4 @@ def test_reduced_scope_contract() -> None:
     with pytest.raises(InputValidationError):
         OperationId("M11-01")
     assert operation_registry.get("M03-01").display_name == "Image Negative"
+    assert operation_registry.get("M01-01").display_name == "Colour to Grayscale"

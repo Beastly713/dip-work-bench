@@ -20,6 +20,7 @@ from dip_workbench.services import (
 )
 from dip_workbench.state import DocumentStore, HistorySnapshotStore
 from dip_workbench.ui import MainWindow
+from dip_workbench.ui.theme import apply_application_theme
 
 APPLICATION_NAME = "DIP Workbench"
 ORGANIZATION_NAME = "DIP Workbench"
@@ -125,8 +126,11 @@ def create_qt_application(argv: Sequence[str] | None = None) -> QApplication:
     _set_application_metadata()
     existing = QApplication.instance()
     if isinstance(existing, QApplication):
+        apply_application_theme(existing)
         return existing
-    return QApplication(list(argv) if argv is not None else sys.argv)
+    application = QApplication(list(argv) if argv is not None else sys.argv)
+    apply_application_theme(application)
+    return application
 
 
 def _show_startup_error() -> None:

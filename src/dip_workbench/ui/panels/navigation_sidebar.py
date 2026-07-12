@@ -39,7 +39,6 @@ class NavigationSidebar(QWidget):
         self.operation_buttons: dict[str, QPushButton] = {}
         self.collapsed_module_buttons: dict[ModuleId, QPushButton] = {}
         self.setMinimumWidth(self.MINIMUM_WIDTH)
-        self.setStyleSheet("background: #f1f5f9;")
         layout = QVBoxLayout(self)
         top = QHBoxLayout()
         self.home_button = QPushButton("Home")
@@ -66,6 +65,7 @@ class NavigationSidebar(QWidget):
             page.layout().addStretch()  # type: ignore[union-attr]
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
+            scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             scroll.setWidget(page)
             self.content_stack.addWidget(scroll)
         layout.addWidget(self.content_stack, 1)
@@ -91,7 +91,7 @@ class NavigationSidebar(QWidget):
             operations = self.registry.by_module(module_id)
             if not operations:
                 empty = QLabel("No registered tools yet.")
-                empty.setStyleSheet("color: #64748b; padding-left: 12px;")
+                empty.setStyleSheet("padding-left: 12px;")
                 content_layout.addWidget(empty)
             for definition in operations:
                 operation = QPushButton(f"{definition.id} {definition.display_name}")

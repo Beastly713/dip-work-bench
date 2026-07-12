@@ -2,13 +2,14 @@
 
 import math
 from dataclasses import dataclass
+from numbers import Real
 from typing import TypeAlias
 
 from dip_workbench.core import InputValidationError
 
 
 def _coordinate(value: object, label: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, Real):
         raise InputValidationError(f"{label} must be numeric.")
     number = float(value)
     if not math.isfinite(number):

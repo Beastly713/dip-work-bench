@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from dip_workbench.controllers import OperationController, OperationWorkspaceState
+from dip_workbench.operations import PreviewPolicy
 from dip_workbench.ui.widgets.operation_result_presenter import (
     DisplayedExportTarget,
     OperationResultPresenter,
@@ -97,6 +98,17 @@ class ResultWorkspaceHost(QWidget):
             )
             self.progress_bar.setValue(round(controller.progress_percent))
             self.progress_message.setText(controller.progress_message)
+        elif state is OperationWorkspaceState.READY:
+            definition = controller.active_definition
+            automatic = definition is not None and definition.preview_policy in {
+                PreviewPolicy.IMMEDIATE,
+                PreviewPolicy.DEBOUNCED,
+            }
+            self._messages[state].setText(
+                "Ready. Preview updates automatically."
+                if automatic
+                else "Ready. Select Run to process the operation."
+            )
         elif state is OperationWorkspaceState.RESULT and controller.active_result:
             result = controller.active_result
             lines = [

@@ -106,5 +106,10 @@ def test_cancel_and_failure_are_typed(qtbot) -> None:
         signal.args[0].error
     )
     assert manager.shutdown() and tuple(str(item.id) for item in operation_registry.all()) == (
+        "M01-01",
+        "M01-02",
+        "M01-03",
+        "M02-02",
         "M03-01",
+        "M03-03",
     )

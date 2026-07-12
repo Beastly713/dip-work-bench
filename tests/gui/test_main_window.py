@@ -4,10 +4,14 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+import numpy as np
 from PySide6.QtCore import QSettings
+from PySide6.QtGui import QPalette
 
 from dip_workbench.controllers import DocumentController
-from dip_workbench.execution import OperationExecutionManager
+from dip_workbench.core import ColourModel, ImageAsset
+from dip_workbench.execution import OperationExecutionManager, OperationRequest
+from dip_workbench.operations import operation_registry
 from dip_workbench.services import (
     ExportService,
     ImageIOService,
@@ -81,14 +85,14 @@ def test_action_availability_and_panel_constraints(qtbot, tmp_path) -> None:  # 
         "report",
         "exit",
         "show_navigation",
-        "show_parameters",
-        "image_negative",
         "operation_search",
     }
     for key, action in window.action_map.items():
         assert action.isEnabled() is (key in enabled)
     assert window.navigation_sidebar.minimumWidth() == 220
     assert window.parameter_panel.minimumWidth() == 280
+    assert not window.parameter_panel.isVisible()
+    assert not window.action_map["show_parameters"].isEnabled()
 
 
 def test_panels_hide_and_restore_usable_widths(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
@@ -100,11 +104,43 @@ def test_panels_hide_and_restore_usable_widths(qtbot, tmp_path) -> None:  # type
     assert window.navigation_sidebar.isVisible()
     assert window.main_splitter.sizes()[0] >= 220
 
+    window.open_operation(operation_registry.get("M03-01"))
+    assert window.parameter_panel.isVisible()
     window.action_map["show_parameters"].setChecked(False)
     assert not window.parameter_panel.isVisible()
+    window.show_home_page()
+    assert not window.parameter_panel.isVisible()
     window.action_map["show_parameters"].setChecked(True)
+    assert not window.parameter_panel.isVisible()
+    window.show_operation_workspace()
     assert window.parameter_panel.isVisible()
     assert window.main_splitter.sizes()[2] >= 280
+
+
+def test_home_loaded_state_immediate_preview_and_palette(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    window = make_window(qtbot, tmp_path)
+    asset = ImageAsset("rgb", np.array([[[10, 20, 30]]], dtype=np.uint8), ColourModel.RGB)
+    window.document_controller.document_store.set_primary_image(asset)
+    window._display_document(window.document_controller.current_image, fit=True)  # type: ignore[arg-type]
+    assert not window.home_page.empty_message_label.isVisible()
+    assert window.home_page.current_document.isVisible()
+
+    requests: list[OperationRequest] = []
+    original_preview = window.operation_controller.execution_manager.request_preview
+
+    def capture(*args, **kwargs):  # type: ignore[no-untyped-def]
+        request = original_preview(*args, **kwargs)
+        requests.append(request)
+        return request
+
+    window.operation_controller.execution_manager.request_preview = capture  # type: ignore[method-assign]
+    window.open_operation(operation_registry.get("M01-01"))
+    assert requests and requests[-1].operation_id == operation_registry.get("M01-01").id
+    assert window.parameter_panel.isVisible()
+    window.show_report_builder()
+    assert not window.parameter_panel.isVisible()
+    palette = window.palette()
+    assert palette.color(QPalette.ColorRole.ButtonText) != palette.color(QPalette.ColorRole.Button)
 
 
 def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
@@ -147,7 +183,7 @@ def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ig
     assert second.size().width() >= 1180
     assert second.size().height() == 760
     assert second.main_splitter.sizes()[0] >= 220
-    assert second.main_splitter.sizes()[2] >= 280
+    assert second._parameter_width >= 280
     assert second_backend.contains("window/geometry")
 
 

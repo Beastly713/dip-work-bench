@@ -11,7 +11,7 @@ from dip_workbench.ui.pages import HomePage
 from dip_workbench.ui.panels import NavigationSidebar
 
 
-def test_eleven_ordered_groups_and_home_cards(qtbot) -> None:  # type: ignore[no-untyped-def]
+def test_ten_ordered_groups_and_home_cards(qtbot) -> None:  # type: ignore[no-untyped-def]
     sidebar = NavigationSidebar(lambda: None, operation_registry)
     home = HomePage(operation_registry)
     qtbot.addWidget(sidebar)
@@ -19,9 +19,19 @@ def test_eleven_ordered_groups_and_home_cards(qtbot) -> None:  # type: ignore[no
     sidebar.show()
     assert list(sidebar.module_buttons) == list(ModuleId)
     assert list(home.module_cards) == list(ModuleId)
-    assert tuple(sidebar.operation_buttons) == ("M03-01",)
-    assert "1 registered tool" in [
+    assert tuple(sidebar.operation_buttons) == (
+        "M01-01",
+        "M01-02",
+        "M01-03",
+        "M02-02",
+        "M03-01",
+        "M03-03",
+    )
+    assert "2 registered tools" in [
         label.text() for label in home.module_cards[ModuleId.M03].findChildren(QLabel)
+    ]
+    assert "3 registered tools" in [
+        label.text() for label in home.module_cards[ModuleId.M01].findChildren(QLabel)
     ]
 
 

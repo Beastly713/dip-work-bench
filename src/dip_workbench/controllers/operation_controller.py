@@ -198,6 +198,7 @@ class OperationController(QObject):
             return
         self._input_source = source
         self._invalidate_result()
+        self._automatic_preview()
 
     def resolved_inputs(self) -> Mapping[str, object]:
         resolved: dict[str, object] = {}
@@ -240,6 +241,9 @@ class OperationController(QObject):
     def preview_or_run(self) -> None:
         self._submit_preview(0)
 
+    def preview_if_automatic(self) -> None:
+        self._automatic_preview()
+
     def _submit_preview(self, debounce_ms: int | None) -> None:
         definition = self._require_definition()
         self._validate()
@@ -266,6 +270,9 @@ class OperationController(QObject):
     def _automatic_preview(self) -> None:
         definition = self._active_definition
         if definition is None or not self.can_preview:
+            return
+        signature = self._signature()
+        if self._preview_request is not None and self._preview_signature == signature:
             return
         if definition.preview_policy is PreviewPolicy.IMMEDIATE:
             self._submit_preview(0)

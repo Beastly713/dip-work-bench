@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QComboBox, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
 from dip_workbench.controllers import OperationController, OperationWorkspaceState
@@ -34,6 +34,7 @@ class OperationParameterPanel(QWidget):
         layout.addWidget(heading)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.host = QWidget()
         self.host_layout = QVBoxLayout(self.host)
         self.scroll_area.setWidget(self.host)

@@ -82,6 +82,7 @@ class MainWindow(QMainWindow):
 
         self.navigation_sidebar = NavigationSidebar(self.show_home_page, operation_registry)
         self._recent_operations: list[OperationDefinition] = []
+        self._parameters_preferred_visible = True
         self.parameter_panel = ParameterPanel()
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.main_splitter.setChildrenCollapsible(False)
@@ -119,14 +120,17 @@ class MainWindow(QMainWindow):
 
     def show_home_page(self) -> None:
         self.page_stack.setCurrentIndex(PageIndex.HOME)
+        self._sync_context_panels()
         self.refresh_document_actions()
 
     def show_operation_workspace(self) -> None:
         self.page_stack.setCurrentIndex(PageIndex.OPERATION)
+        self._sync_context_panels()
         self.refresh_document_actions()
 
     def show_report_builder(self) -> None:
         self.page_stack.setCurrentIndex(PageIndex.REPORT)
+        self._sync_context_panels()
         self.refresh_document_actions()
 
     def _add_action(
@@ -152,7 +156,6 @@ class MainWindow(QMainWindow):
         self._add_action("sample", "Open Sample Image")
         self._add_action("save", "Save Current Image", shortcut="Ctrl+S")
         self._add_action("export_result", "Export Displayed Result")
-        self._add_action("image_negative", "M03-01 Image Negative", enabled=True)
         self._add_action("operation_search", "Search Operations", enabled=True, shortcut="Ctrl+K")
         self._add_action("report", "Open Report Builder", enabled=True).triggered.connect(
             self.show_report_builder
@@ -224,7 +227,7 @@ class MainWindow(QMainWindow):
                     "presentation",
                 ),
             ),
-            ("Operations", ("image_negative", "operation_search")),
+            ("Operations", ("operation_search",)),
             ("Help", ("about_operation", "shortcuts", "about")),
         )
         self.menus: dict[str, QMenu] = {}
@@ -254,9 +257,6 @@ class MainWindow(QMainWindow):
         self.action_map["save"].triggered.connect(self.save_current_image_dialog)
         self.action_map["export_result"].triggered.connect(self.export_displayed_result_dialog)
         self.action_map["compare"].triggered.connect(self.activate_before_after_comparison)
-        self.action_map["image_negative"].triggered.connect(
-            lambda: self.open_operation(operation_registry.get("M03-01"))
-        )
         self.action_map["operation_search"].triggered.connect(self.focus_operation_search)
         self.action_map["undo"].triggered.connect(self.undo_document)
         self.action_map["redo"].triggered.connect(self.redo_document)
@@ -347,6 +347,7 @@ class MainWindow(QMainWindow):
         self.parameter_panel.operation_panel.configure(self.operation_controller)
         self.parameter_panel.show_operation_panel()
         self.show_operation_workspace()
+        self.operation_controller.preview_if_automatic()
 
     def focus_operation_search(self) -> None:
         self.action_map["show_navigation"].setChecked(True)
@@ -370,12 +371,14 @@ class MainWindow(QMainWindow):
         ):
             self.operation_workspace.refresh_academic_operation(self.operation_controller)
             self.parameter_panel.operation_panel.refresh(self.operation_controller)
+        self._sync_context_panels()
         self.refresh_document_actions()
 
     def _academic_image_applied(self, asset: ImageAsset) -> None:
         self._display_document(asset, fit=True)
         self.operation_workspace.show_academic_operation(self.operation_controller)
         self.parameter_panel.show_operation_panel()
+        self._sync_context_panels()
 
     def clear_active_preview(self) -> None:
         if (
@@ -443,8 +446,11 @@ class MainWindow(QMainWindow):
             self.operation_workspace.show_academic_operation(self.operation_controller)
             self.parameter_panel.operation_panel.configure(self.operation_controller)
             self.parameter_panel.show_operation_panel()
+            self._sync_context_panels()
+            self.operation_controller.preview_if_automatic()
         else:
             self.operation_workspace.show_document_view()
+            self._sync_context_panels()
         return True
 
     def save_current_image_dialog(self) -> None:
@@ -602,6 +608,8 @@ class MainWindow(QMainWindow):
             self.operation_workspace.show_academic_operation(self.operation_controller)
             self.parameter_panel.operation_panel.refresh(self.operation_controller)
             self.parameter_panel.show_operation_panel()
+            self._sync_context_panels()
+            self.operation_controller.preview_if_automatic()
 
     def _display_document(self, asset: ImageAsset, *, fit: bool) -> None:
         old = self.operation_workspace.image_canvas.current_asset
@@ -625,6 +633,7 @@ class MainWindow(QMainWindow):
         self.operation_controller.clear_operation()
         self.navigation_sidebar.set_active_operation(None)
         self.operation_workspace.show_document_view()
+        self.show_operation_workspace()
         if self.document_controller.document_store.active_preview is not None:
             self.clear_utility_preview()
         self.parameter_panel.utility_panel.configure(
@@ -635,6 +644,7 @@ class MainWindow(QMainWindow):
             self.begin_region_selection()
         else:
             self.operation_workspace.image_canvas.cancel_interaction()
+        self._sync_context_panels()
         self.refresh_document_actions()
 
     def begin_region_selection(self) -> None:
@@ -706,6 +716,7 @@ class MainWindow(QMainWindow):
         ):
             self.operation_workspace.image_canvas.set_selected_region(region)
         self.parameter_panel.show_placeholder()
+        self._sync_context_panels()
 
     def _confirm_replacement(self) -> bool:
         answer = QMessageBox.question(
@@ -761,6 +772,17 @@ class MainWindow(QMainWindow):
             self.main_splitter.setSizes([self._navigation_width, max(sizes[1], 1), sizes[2]])
 
     def set_parameters_visible(self, visible: bool) -> None:
+        self._parameters_preferred_visible = visible
+        self._sync_context_panels()
+
+    def _sync_context_panels(self) -> None:
+        can_use_parameters = self.page_stack.currentIndex() == PageIndex.OPERATION and (
+            self.operation_workspace.mode_stack.currentWidget()
+            is self.operation_workspace.academic_view
+            or self.parameter_panel.stack.currentWidget() is self.parameter_panel.utility_panel
+        )
+        self.action_map["show_parameters"].setEnabled(can_use_parameters)
+        visible = can_use_parameters and self._parameters_preferred_visible
         if not visible and self.parameter_panel.isVisible():
             self._parameter_width = max(self.main_splitter.sizes()[2], ParameterPanel.MINIMUM_WIDTH)
         self.parameter_panel.setVisible(visible)
