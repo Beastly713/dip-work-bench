@@ -401,6 +401,8 @@ class OperationController(QObject):
             if spec.required and not values:
                 self._input_errors[spec.key] = f"{spec.label} is required."
                 continue
+            if not values:
+                continue
             if len(values) < spec.minimum_count:
                 self._input_errors[spec.key] = (
                     f"{spec.label} needs at least {spec.minimum_count} items."

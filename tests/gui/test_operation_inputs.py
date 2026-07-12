@@ -36,6 +36,7 @@ def definition() -> OperationDefinition:
                 "reference",
                 "Image B",
                 InputRole.REFERENCE_IMAGE,
+                required=False,
                 accepted_colour_models=frozenset({ColourModel.RGB}),
                 same_dimensions_as="image",
             ),
@@ -43,6 +44,7 @@ def definition() -> OperationDefinition:
                 "dataset",
                 "Dataset",
                 InputRole.DATASET,
+                required=False,
                 multiple=True,
                 minimum_count=2,
                 maximum_count=None,
@@ -87,6 +89,12 @@ def test_image_load_clear_restore_and_validation(qtbot, tmp_path) -> None:  # ty
     controller, store = make_controller(tmp_path)
     strip = OperationInputStrip()
     qtbot.addWidget(strip)
+    strip.refresh(controller)
+    assert "Not provided (Optional)" in strip.additional_summaries["reference"].text()
+    assert (
+        "Not provided (Optional; minimum 2 when provided)"
+        in strip.additional_summaries["dataset"].text()
+    )
     reference = ImageAsset(
         name="reference", data=np.zeros((4, 5, 3), dtype=np.uint8), colour_model=ColourModel.RGB
     )
@@ -96,10 +104,17 @@ def test_image_load_clear_restore_and_validation(qtbot, tmp_path) -> None:  # ty
     controller.select_operation(definition())
     assert controller.additional_inputs["reference"] is reference
     bad = ImageAsset(
-        name="bad", data=np.zeros((3, 3), dtype=np.uint8), colour_model=ColourModel.GRAY
+        name="bad", data=np.zeros((4, 5), dtype=np.uint8), colour_model=ColourModel.GRAY
     )
     controller.set_additional_input("reference", bad)
-    assert "reference" in controller.input_errors
+    assert "unsupported colour model" in controller.input_errors["reference"]
+    wrong_size = ImageAsset(
+        name="wrong",
+        data=np.zeros((3, 3, 3), dtype=np.uint8),
+        colour_model=ColourModel.RGB,
+    )
+    controller.set_additional_input("reference", wrong_size)
+    assert "matching dimensions" in controller.input_errors["reference"]
     controller.clear_additional_input("reference")
     assert "reference" not in controller.additional_inputs and not store.auxiliary_inputs
 

@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 
 from dip_workbench.controllers import InputSource, OperationController
 from dip_workbench.core import ImageAsset
-from dip_workbench.operations import InputRole
+from dip_workbench.operations import InputRole, InputSpec
 
 
 class OperationInputStrip(QWidget):
@@ -93,7 +93,7 @@ class OperationInputStrip(QWidget):
             error = controller.input_errors.get(spec.key)
             row = QWidget()
             row_layout = QHBoxLayout(row)
-            label = QLabel(self._summary(spec.label, spec.role, value, spec.minimum_count))
+            label = QLabel(self._summary(spec, value))
             label.setWordWrap(True)
             if error:
                 label.setText(f"{label.text()}\n{error}")
@@ -123,8 +123,12 @@ class OperationInputStrip(QWidget):
         self.additional_box.setVisible(bool(additional))
 
     @staticmethod
-    def _summary(label: str, role: InputRole, value: object, minimum_count: int) -> str:
-        requirement = f"required, minimum {minimum_count}" if minimum_count else "optional"
+    def _summary(spec: InputSpec, value: object) -> str:
+        label = spec.label
+        role = spec.role
+        requirement = "Required" if spec.required else "Optional"
+        if not spec.required and spec.multiple and spec.minimum_count > 0:
+            requirement += f"; minimum {spec.minimum_count} when provided"
         if isinstance(value, ImageAsset):
             return f"{label} — {value.name} — {value.width} x {value.height} — {value.colour_model.value} ({requirement})"
         if role is InputRole.DATASET and isinstance(value, (tuple, list)):
@@ -135,7 +139,7 @@ class OperationInputStrip(QWidget):
                 if len(dimensions) == 1
                 else "Mixed dimensions"
             )
-            return f"{label} — {len(value)} images — {size} (minimum {minimum_count})"
+            return f"{label} — {len(value)} images — {size} ({requirement})"
         count = len(value) if isinstance(value, (tuple, list, set, frozenset)) else 0
         if role is InputRole.SEED_POINTS:
             return f"{label} — {count} selected"

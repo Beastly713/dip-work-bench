@@ -10,6 +10,7 @@ from PySide6.QtCore import QSettings
 
 from dip_workbench.controllers import DocumentController, OperationWorkspaceState
 from dip_workbench.execution import OperationExecutionManager
+from dip_workbench.operations import ModuleId, operation_registry
 from dip_workbench.services import (
     FlipDirection,
     ImageIOService,
@@ -109,3 +110,9 @@ def test_image_negative_preview_apply_history_and_export(qtbot, tmp_path) -> Non
     exported = exported.with_suffix(".png")
     reloaded = window.document_controller.image_io.load(exported)
     assert np.array_equal(reloaded.data, window.document_controller.current_image.data)  # type: ignore[union-attr]
+    window.open_utility("flip")
+    assert not window.navigation_sidebar.operation_buttons["M03-01"].styleSheet()
+    assert not window.navigation_sidebar.module_buttons[ModuleId.M03].styleSheet()
+    assert window.home_page.recent_frame.isVisibleTo(window.home_page)
+    window.open_operation(operation_registry.get("M03-01"))
+    assert "font-weight: 700" in window.navigation_sidebar.operation_buttons["M03-01"].styleSheet()

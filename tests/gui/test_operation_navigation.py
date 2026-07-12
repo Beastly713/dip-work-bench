@@ -54,6 +54,14 @@ def test_active_collapsed_focus_and_recent(qtbot) -> None:  # type: ignore[no-un
     sidebar.set_active_operation(definition)
     assert sidebar.expanded_module is ModuleId.M03
     assert "font-weight: 700" in sidebar.operation_buttons["M03-01"].styleSheet()
+    assert "font-weight: 700" in sidebar.module_buttons[ModuleId.M03].styleSheet()
+    assert "font-weight: 700" in sidebar.collapsed_module_buttons[ModuleId.M03].styleSheet()
+    sidebar.set_active_operation(None)
+    assert not sidebar.operation_buttons["M03-01"].styleSheet()
+    assert not sidebar.module_buttons[ModuleId.M03].styleSheet()
+    assert not sidebar.collapsed_module_buttons[ModuleId.M03].styleSheet()
+    assert sidebar.expanded_module is ModuleId.M03
+    sidebar.set_active_operation(definition)
     sidebar.set_collapsed(True)
     assert sidebar.is_collapsed and sidebar.minimumWidth() == sidebar.COLLAPSED_WIDTH
     sidebar.activateWindow()

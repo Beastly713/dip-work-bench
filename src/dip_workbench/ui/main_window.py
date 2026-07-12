@@ -587,6 +587,7 @@ class MainWindow(QMainWindow):
         if asset is None:
             return
         self.operation_controller.clear_operation()
+        self.navigation_sidebar.set_active_operation(None)
         self.operation_workspace.show_document_view()
         if self.document_controller.document_store.active_preview is not None:
             self.clear_utility_preview()

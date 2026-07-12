@@ -37,6 +37,7 @@ class NavigationSidebar(QWidget):
         self.module_buttons: dict[ModuleId, QPushButton] = {}
         self.module_contents: dict[ModuleId, QWidget] = {}
         self.operation_buttons: dict[str, QPushButton] = {}
+        self.collapsed_module_buttons: dict[ModuleId, QPushButton] = {}
         self.setMinimumWidth(self.MINIMUM_WIDTH)
         self.setStyleSheet("background: #f1f5f9;")
         layout = QVBoxLayout(self)
@@ -106,6 +107,7 @@ class NavigationSidebar(QWidget):
             number.clicked.connect(
                 lambda checked=False, value=module_id: self._collapsed_module(value)
             )
+            self.collapsed_module_buttons[module_id] = number
             self.collapsed_layout.addWidget(number)
 
     def expand_module(self, module_id: ModuleId) -> None:
@@ -128,6 +130,16 @@ class NavigationSidebar(QWidget):
                 if active
                 else ""
             )
+        active_module = definition.module_id if definition is not None else None
+        for module_id in ModuleId:
+            active = module_id is active_module
+            style = (
+                "QPushButton { background: #dbeafe; color: #1d4ed8; font-weight: 700; }"
+                if active
+                else ""
+            )
+            self.module_buttons[module_id].setStyleSheet(style)
+            self.collapsed_module_buttons[module_id].setStyleSheet(style)
 
     def _search(self, text: str) -> None:
         if self._collapsed:

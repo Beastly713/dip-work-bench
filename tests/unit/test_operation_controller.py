@@ -219,3 +219,49 @@ def test_policy_driven_parameter_preview(tmp_path) -> None:
     explicit.select_operation(definition(preview_policy=PreviewPolicy.EXPLICIT))
     explicit.parameter_values_changed({"amount": 3})
     assert explicit_manager.request is None
+
+
+def test_optional_input_count_semantics(tmp_path) -> None:
+    item, _, _ = controller(tmp_path)
+
+    def with_input(spec: InputSpec, value: str) -> OperationDefinition:
+        return OperationDefinition(
+            OperationId(value),
+            ModuleId.M03,
+            "Optional Inputs",
+            "Validate optional input counts.",
+            (spec,),
+            (),
+            PreviewPolicy.EXPLICIT,
+            ApplyPolicy.NONE,
+            PresenterId.T1_SINGLE_IMAGE_TRANSFORMATION,
+            lambda: object(),
+            lambda: object(),
+        )
+
+    item.select_operation(
+        with_input(
+            InputSpec("reference", "Reference Image", InputRole.REFERENCE_IMAGE, required=False),
+            "M03-02",
+        )
+    )
+    assert not item.input_errors
+    optional_multiple = InputSpec(
+        "dataset",
+        "Dataset",
+        InputRole.DATASET,
+        required=False,
+        multiple=True,
+        minimum_count=2,
+        maximum_count=None,
+    )
+    item.select_operation(with_input(optional_multiple, "M03-03"))
+    assert not item.input_errors
+    item.set_additional_input("dataset", (object(),))
+    assert "dataset" in item.input_errors
+    item.set_additional_input("dataset", (object(), object()))
+    assert "dataset" not in item.input_errors
+    item.select_operation(
+        with_input(InputSpec("required", "Required Input", InputRole.REFERENCE_IMAGE), "M03-04")
+    )
+    assert "required" in item.input_errors
