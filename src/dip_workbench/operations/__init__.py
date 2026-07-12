@@ -25,6 +25,9 @@ from dip_workbench.operations.m03.image_negative import (
     IMAGE_NEGATIVE_DEFINITION,
     ImageNegativeExecutor,
 )
+from dip_workbench.operations.m04 import *
+from dip_workbench.operations.m05 import *
+from dip_workbench.operations.m08 import *
 from dip_workbench.operations.overlays import *
 from dip_workbench.operations.parameters import (
     ConditionOperator,
@@ -42,4 +45,5 @@ from dip_workbench.operations.registry import (
     operation_registry,
 )
 from dip_workbench.operations.results import ApplyCandidate, OperationResult
+from dip_workbench.operations.spatial import *
 from dip_workbench.operations.visualization import *

@@ -26,12 +26,20 @@ def test_ten_ordered_groups_and_home_cards(qtbot) -> None:  # type: ignore[no-un
         "M02-02",
         "M03-01",
         "M03-03",
+        "M04-01",
+        "M04-02",
+        "M05-01",
+        "M05-05",
+        "M08-01",
     )
     assert "2 registered tools" in [
         label.text() for label in home.module_cards[ModuleId.M03].findChildren(QLabel)
     ]
     assert "3 registered tools" in [
         label.text() for label in home.module_cards[ModuleId.M01].findChildren(QLabel)
+    ]
+    assert "2 registered tools" in [
+        label.text() for label in home.module_cards[ModuleId.M04].findChildren(QLabel)
     ]
 
 

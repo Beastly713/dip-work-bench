@@ -29,7 +29,7 @@ def execute(asset: ImageAsset, handling: str = "luminance"):
 
 def test_definition_and_registry_contract() -> None:
     definitions = operation_registry.all()
-    assert len(definitions) == 6
+    assert len(definitions) == 11
     definition = operation_registry.get("M03-01")
     assert str(definition.id) == "M03-01"
     assert definition.module_id is ModuleId.M03

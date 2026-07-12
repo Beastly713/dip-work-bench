@@ -38,3 +38,21 @@ def test_histogram_and_negative_curve(qtbot) -> None:  # type: ignore[no-untyped
     assert (series.x[0], series.y[0]) == (0.0, 255.0)
     assert (series.x[127], series.y[127]) == (127.0, 128.0)
     assert (series.x[255], series.y[255]) == (255.0, 0.0)
+
+
+def test_histogram_bar_width_and_legend_redraw(qtbot) -> None:  # type: ignore[no-untyped-def]
+    widget = GraphWidget()
+    qtbot.addWidget(widget)
+    graph = GraphData(
+        (
+            GraphSeries("a", (8, 24, 40), (1, 2, 3)),
+            GraphSeries("b", (8, 24, 40), (3, 2, 1)),
+        ),
+        style=GraphStyle.BAR,
+    )
+    widget.set_graph_data(graph)
+    first_items = list(widget.plot_items)
+    assert first_items[0].opts["width"] == 6.4
+    widget.set_graph_data(graph)
+    assert len(widget.plot_items) == 2
+    assert widget.plot_items[0] is not first_items[0]

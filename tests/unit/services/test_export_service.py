@@ -108,6 +108,22 @@ def test_histogram_csv_exports(tmp_path) -> None:  # type: ignore[no-untyped-def
         assert ",0.0," in text
 
 
+def test_visible_histogram_subset_csv_and_png_export(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    service = ExportService(ImageIOService())
+    graph = GraphData(
+        (
+            GraphSeries("Red", (0, 1), (1, 2)),
+            GraphSeries("Blue", (0, 1), (3, 4)),
+        )
+    )
+    artifact = HistogramArtifact("visible_histogram", "Visible Histogram", graph)
+    csv_path = service.export(artifact, tmp_path / "visible.csv")
+    text = csv_path.read_text(encoding="utf-8")
+    assert "Red" in text and "Blue" in text and "Green" not in text
+    png_path = service.export(artifact, tmp_path / "visible.png", render_source=RenderSource())
+    assert png_path.exists() and png_path.stat().st_size > 0
+
+
 def test_overlay_png_requires_render_source(tmp_path) -> None:  # type: ignore[no-untyped-def]
     service = ExportService(ImageIOService())
     artifact = OverlayArtifact("overlay", "Overlay", OverlayData((CircleOverlay(2, 2, 1),)))

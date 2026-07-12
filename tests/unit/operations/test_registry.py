@@ -84,6 +84,11 @@ def test_registry_and_definition_validation() -> None:
         "M02-02",
         "M03-01",
         "M03-03",
+        "M04-01",
+        "M04-02",
+        "M05-01",
+        "M05-05",
+        "M08-01",
     )
 
 
