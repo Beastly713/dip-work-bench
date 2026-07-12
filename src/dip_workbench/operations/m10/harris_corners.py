@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     from dip_workbench.execution import OperationContext
 
 APERTURE_CHOICES = tuple(ParameterChoice(v, str(v)) for v in (3, 5, 7))
+SUBPIXEL_WARNING = (
+    "Subpixel refinement could not be applied safely; original corner coordinates were retained."
+)
 
 
 def _detect_corners(
@@ -61,6 +64,49 @@ def _detect_corners(
             if len(accepted) >= maximum:
                 break
     return accepted
+
+
+def refine_corners_safely(
+    gray: np.ndarray,
+    corners: list[tuple[float, float, float]],
+) -> tuple[list[tuple[float, float, float]], str | None]:
+    if not corners:
+        return corners, None
+    height, width = gray.shape[:2]
+    half_window = min(5, (width - 5) // 2, (height - 5) // 2)
+    if half_window < 1:
+        return corners, SUBPIXEL_WARNING
+    eligible: list[tuple[int, tuple[float, float, float]]] = []
+    for index, (x, y, value) in enumerate(corners):
+        if half_window <= x < width - half_window and half_window <= y < height - half_window:
+            eligible.append((index, (x, y, value)))
+    if not eligible:
+        return corners, SUBPIXEL_WARNING
+    points = np.asarray([[x, y] for _index, (x, y, _value) in eligible], dtype=np.float32).reshape(
+        -1, 1, 2
+    )
+    try:
+        refined = cv2.cornerSubPix(
+            gray,
+            points,
+            (half_window, half_window),
+            (-1, -1),
+            (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01),
+        )
+    except cv2.error:
+        return corners, SUBPIXEL_WARNING
+    output = list(corners)
+    for point, (index, (old_x, old_y, value)) in zip(refined, eligible, strict=True):
+        x = float(point[0][0])
+        y = float(point[0][1])
+        if not np.isfinite((x, y)).all():
+            x, y = old_x, old_y
+        output[index] = (
+            float(np.clip(x, 0, width - 1)),
+            float(np.clip(y, 0, height - 1)),
+            value,
+        )
+    return output, None
 
 
 class HarrisCornersExecutor:
@@ -95,26 +141,9 @@ class HarrisCornersExecutor:
             minimum_distance=minimum_distance,
             maximum=maximum_corners,
         )
+        warning = None
         if corners and bool(context.parameters["subpixel_refinement"]):
-            points = np.asarray([[x, y] for x, y, _value in corners], dtype=np.float32).reshape(
-                -1, 1, 2
-            )
-            win = (min(5, max(1, image.width // 2)), min(5, max(1, image.height // 2)))
-            refined = cv2.cornerSubPix(
-                gray,
-                points,
-                win,
-                (-1, -1),
-                (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01),
-            )
-            corners = [
-                (
-                    float(np.clip(point[0][0], 0, image.width - 1)),
-                    float(np.clip(point[0][1], 0, image.height - 1)),
-                    value,
-                )
-                for point, (_x, _y, value) in zip(refined, corners, strict=True)
-            ]
+            corners, warning = refine_corners_safely(gray, corners)
         context.cancellation_token.raise_if_cancelled()
         overlays = tuple(PointOverlay(x, y, 3.0) for x, y, _value in corners)
         table_rows = tuple((index, x, y, value) for index, (x, y, value) in enumerate(corners, 1))
@@ -156,6 +185,7 @@ class HarrisCornersExecutor:
                 "Maximum Harris Response": float(response.max()),
                 "Response Threshold": threshold,
             },
+            warnings=(warning,) if warning else (),
             metadata={"input_asset": image},
         )
 

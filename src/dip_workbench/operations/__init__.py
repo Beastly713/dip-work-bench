@@ -28,7 +28,9 @@ from dip_workbench.operations.m03.image_negative import (
 from dip_workbench.operations.m04 import *
 from dip_workbench.operations.m05 import *
 from dip_workbench.operations.m06 import *
+from dip_workbench.operations.m07 import *
 from dip_workbench.operations.m08 import *
+from dip_workbench.operations.m09 import *
 from dip_workbench.operations.m10 import *
 from dip_workbench.operations.overlays import *
 from dip_workbench.operations.parameters import (

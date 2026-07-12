@@ -112,3 +112,27 @@ def test_harris_detects_respects_caps_and_constant_is_empty() -> None:
     assert empty.primary_artifact.data.items == ()
     assert empty.get_artifact("corner_detections").data.rows == ()
     np.testing.assert_array_equal(image.data, data)
+
+
+def test_harris_subpixel_small_image_is_safe_and_warns() -> None:
+    data = np.zeros((5, 5), dtype=np.uint8)
+    data[1:4, 1:4] = 255
+    image = ImageAsset("small", data, ColourModel.GRAY)
+    result = HarrisCornersExecutor().execute(
+        context(
+            image,
+            {
+                **HARRIS,
+                "block_size": 2,
+                "quality_level": 0.001,
+                "minimum_distance": 1.0,
+                "maximum_corners": 4,
+                "subpixel_refinement": True,
+            },
+        )
+    )
+    assert result.warnings
+    for point in result.primary_artifact.data.items:
+        assert np.isfinite((point.x, point.y)).all()
+        assert 0 <= point.x < image.width
+        assert 0 <= point.y < image.height
