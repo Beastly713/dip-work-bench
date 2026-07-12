@@ -76,15 +76,21 @@ python scripts/verify_registry.py
 C08 executes future academic operations through `QThreadPool`. Preview requests default to a
 200 ms debounce, newer previews supersede older work, and cancellation is cooperative. Typed
 progress and failures cross the worker boundary. Preview image inputs may be reduced, while Apply
-always uses full-resolution inputs. C09 connects execution to the workspace; the registry remains
-empty until C10.
+always uses full-resolution inputs. C09 connects execution to the workspace.
 
 C09 provides the generic academic-operation workspace. Inputs are shown before parameters and
 Original versus Current Result is always an explicit source choice. Preview or Run leaves Current
 Result and history unchanged; Apply performs a new full-resolution execution and records exactly
 one history entry. Validation and typed execution failures are displayed inline. No production
-academic operation is registered yet. C10 introduces Image Negative, while C11 supplies operation
-navigation and generated parameter controls.
+operation-specific editors and presenters can be hosted without the C11 generated-control system.
+
+C10 registers M03-01 Image Negative as the first and only production academic operation. Its
+Colour Handling choices are Luminance only, Each RGB channel, and Grayscale output. Preview is
+non-destructive and shows synchronized input/result canvases plus a collapsed mapping curve;
+Apply reruns against the selected full-resolution source and creates one history entry. Global
+Undo, Redo, and displayed-image export complete the vertical slice. The registry checkpoint is
+11 modules and one operation. C11 adds complete navigation and generated parameter controls; no
+other Module 3 operation is present in C10.
 
 For headless GUI validation on Ubuntu, run:
 

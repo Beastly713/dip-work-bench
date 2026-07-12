@@ -46,6 +46,7 @@ def test_main_window_structure_and_navigation(qtbot, tmp_path) -> None:  # type:
         "File",
         "Edit",
         "View",
+        "Operations",
         "Help",
     ]
     assert [action.text() for action in window.global_toolbar.actions()] == [
@@ -67,7 +68,15 @@ def test_main_window_structure_and_navigation(qtbot, tmp_path) -> None:  # type:
 
 def test_action_availability_and_panel_constraints(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
     window = make_window(qtbot, tmp_path)
-    enabled = {"home", "open", "report", "exit", "show_navigation", "show_parameters"}
+    enabled = {
+        "home",
+        "open",
+        "report",
+        "exit",
+        "show_navigation",
+        "show_parameters",
+        "image_negative",
+    }
     for key, action in window.action_map.items():
         assert action.isEnabled() is (key in enabled)
     assert window.navigation_sidebar.minimumWidth() == 220

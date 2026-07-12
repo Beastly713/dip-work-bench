@@ -180,6 +180,16 @@ class ImageCanvas(QGraphicsView):
     def zoom_out(self) -> None:
         self._apply_zoom(1.0 / self.ZOOM_STEP)
 
+    def set_zoom_percent(self, percent: float) -> None:
+        if self._pixmap_item is None or not math.isfinite(percent):
+            return
+        target = max(self.MIN_ZOOM, min(self.MAX_ZOOM, float(percent)))
+        if math.isclose(target, self.zoom_percent, rel_tol=1e-6):
+            return
+        self._fit_mode = False
+        self.scale(target / self.zoom_percent, target / self.zoom_percent)
+        self.zoom_changed.emit(self.zoom_percent)
+
     def _apply_zoom(self, factor: float) -> None:
         if self._asset is None:
             return

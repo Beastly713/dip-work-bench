@@ -104,4 +104,6 @@ def test_cancel_and_failure_are_typed(qtbot) -> None:
     assert isinstance(signal.args[0].error, OperationExecutionError) and "raw" not in str(
         signal.args[0].error
     )
-    assert manager.shutdown() and operation_registry.all() == ()
+    assert manager.shutdown() and tuple(str(item.id) for item in operation_registry.all()) == (
+        "M03-01",
+    )

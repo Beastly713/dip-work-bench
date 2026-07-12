@@ -108,5 +108,6 @@ class ResultWorkspaceHost(QWidget):
             self.result_widget_host.removeWidget(self._result_widget)
             self._result_widget.setParent(None)
         self._result_widget = widget
+        self.result_summary.setVisible(widget is None)
         if widget is not None:
             self.result_widget_host.addWidget(widget)

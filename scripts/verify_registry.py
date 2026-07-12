@@ -5,13 +5,16 @@ from dip_workbench.operations import ModuleId, OperationRegistryError, operation
 
 def main() -> int:
     try:
-        report = operation_registry.verify()
+        report = operation_registry.verify(("M03-01",))
         if len(ModuleId) != 11:
             raise OperationRegistryError("Expected exactly eleven modules.")
+        if report.operation_count != 1:
+            raise OperationRegistryError("Expected exactly one production operation.")
     except OperationRegistryError as error:
         print(f"Registry invalid: {error}")
         return 1
-    print(f"Registry valid: {report.module_count} modules, {report.operation_count} operations.")
+    noun = "operation" if report.operation_count == 1 else "operations"
+    print(f"Registry valid: {report.module_count} modules, {report.operation_count} {noun}.")
     return 0
 
 

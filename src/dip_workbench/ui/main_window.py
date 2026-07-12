@@ -27,7 +27,7 @@ from dip_workbench.core import (
     UnsupportedImageError,
 )
 from dip_workbench.execution import OperationExecutionManager
-from dip_workbench.operations import OperationDefinition
+from dip_workbench.operations import OperationDefinition, operation_registry
 from dip_workbench.services import (
     SettingsService,
 )
@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
         self._add_action("sample", "Open Sample Image")
         self._add_action("save", "Save Current Image", shortcut="Ctrl+S")
         self._add_action("export_result", "Export Displayed Result")
+        self._add_action("image_negative", "M03-01 Image Negative", enabled=True)
         self._add_action("report", "Open Report Builder", enabled=True).triggered.connect(
             self.show_report_builder
         )
@@ -213,6 +214,7 @@ class MainWindow(QMainWindow):
                     "presentation",
                 ),
             ),
+            ("Operations", ("image_negative",)),
             ("Help", ("about_operation", "shortcuts", "about")),
         )
         self.menus: dict[str, QMenu] = {}
@@ -240,6 +242,10 @@ class MainWindow(QMainWindow):
     def _connect_document_workflow(self) -> None:
         self.action_map["open"].triggered.connect(self.open_primary_image_dialog)
         self.action_map["save"].triggered.connect(self.save_current_image_dialog)
+        self.action_map["export_result"].triggered.connect(self.export_displayed_result_dialog)
+        self.action_map["image_negative"].triggered.connect(
+            lambda: self.open_operation(operation_registry.get("M03-01"))
+        )
         self.action_map["undo"].triggered.connect(self.undo_document)
         self.action_map["redo"].triggered.connect(self.redo_document)
         self.action_map["reset"].triggered.connect(self.reset_document)
@@ -306,7 +312,10 @@ class MainWindow(QMainWindow):
         self.operation_controller.image_applied.connect(self._academic_image_applied)
 
     def open_operation(self, definition: OperationDefinition) -> None:
-        if self.document_controller.document_store.active_preview is not None:
+        preview = self.document_controller.document_store.active_preview
+        if preview is not None and preview.operation_id in {"U-05", "U-06", "U-07", "U-08"}:
+            self.clear_utility_preview()
+        elif preview is not None:
             self.document_controller.clear_active_preview()
         self.operation_workspace.image_canvas.cancel_interaction()
         self.operation_controller.select_operation(definition)
@@ -349,6 +358,9 @@ class MainWindow(QMainWindow):
         self.action_map["clear_preview"].setEnabled(
             self.document_controller.document_store.active_preview is not None
         )
+        result = self.operation_controller.active_result
+        academic_image = result is not None and isinstance(result.primary_artifact.data, ImageAsset)
+        self.action_map["export_result"].setEnabled(active or academic_image)
 
     def open_primary_image_dialog(self) -> None:
         initial = self._initial_directory("paths/last_open_directory")
@@ -435,6 +447,46 @@ class MainWindow(QMainWindow):
         self.settings.sync()
         self.workbench_status_bar.showMessage("Current image saved.", 3000)
         return True
+
+    def export_displayed_result_dialog(self) -> None:
+        asset = self._displayed_export_asset()
+        if asset is None:
+            return
+        suggestion = (
+            self._initial_directory("paths/last_export_directory") / f"{Path(asset.name).stem}.png"
+        )
+        filters = "PNG (*.png);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
+        if asset.colour_model.value != "BINARY":
+            filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Displayed Result", str(suggestion), filters
+        )
+        if path:
+            self.export_displayed_result_path(path)
+
+    def export_displayed_result_path(self, path: str | Path) -> bool:
+        asset = self._displayed_export_asset()
+        if asset is None:
+            self._show_save_error("No image result is available to export.")
+            return False
+        destination = Path(path)
+        if not destination.suffix:
+            destination = destination.with_suffix(".png")
+        try:
+            self.document_controller.image_io.save(asset, destination)
+        except (InputValidationError, ExportError) as error:
+            self._show_save_error(str(error))
+            return False
+        self.settings.set("paths/last_export_directory", str(destination.parent))
+        self.settings.sync()
+        self.workbench_status_bar.showMessage("Displayed result exported.", 3000)
+        return True
+
+    def _displayed_export_asset(self) -> ImageAsset | None:
+        result = self.operation_controller.active_result
+        if result is not None and isinstance(result.primary_artifact.data, ImageAsset):
+            return result.primary_artifact.data
+        return self.document_controller.current_image
 
     def undo_document(self) -> None:
         self._run_history_action(self.document_controller.undo)

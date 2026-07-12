@@ -9,6 +9,7 @@ from dip_workbench.ui.widgets import (
     ImageCanvas,
     OperationHeader,
     OperationInputStrip,
+    OperationResultPresenter,
     ResultWorkspaceHost,
 )
 
@@ -53,6 +54,9 @@ class OperationWorkspace(QWidget):
         self.operation_header = OperationHeader()
         self.operation_input_strip = OperationInputStrip()
         self.result_workspace = ResultWorkspaceHost()
+        self._result_presenter: OperationResultPresenter | None = None
+        self._presenter_operation_id: str | None = None
+        self._presented_result: object | None = None
         academic_layout.addWidget(self.operation_header)
         academic_layout.addWidget(self.operation_input_strip)
         academic_layout.addWidget(self.result_workspace, 1)
@@ -70,12 +74,33 @@ class OperationWorkspace(QWidget):
             self.operation_header.clear_operation()
         else:
             self.operation_header.set_operation(definition)
+            operation_id = str(definition.id)
+            if operation_id != self._presenter_operation_id:
+                candidate = definition.presenter_factory()
+                self._result_presenter = (
+                    candidate if isinstance(candidate, OperationResultPresenter) else None
+                )
+                self._presenter_operation_id = operation_id
+                self._presented_result = None
+                self.result_workspace.set_result_widget(self._result_presenter)
         self.refresh_academic_operation(controller)
         self.mode_stack.setCurrentIndex(1)
 
     def refresh_academic_operation(self, controller: OperationController) -> None:
         self.operation_input_strip.refresh(controller)
         self.result_workspace.refresh(controller)
+        result = controller.active_result
+        if self._result_presenter is not None and result is not self._presented_result:
+            if result is None:
+                self._result_presenter.clear_result()
+            else:
+                input_asset = result.metadata.get("input_asset")
+                if not isinstance(input_asset, ImageAsset):
+                    selected = controller.resolved_inputs().get("image")
+                    input_asset = selected if isinstance(selected, ImageAsset) else None
+                if input_asset is not None:
+                    self._result_presenter.present(input_asset, result)
+            self._presented_result = result
 
     def set_image(self, asset: ImageAsset) -> None:
         self.image_name_label.setText(asset.name)

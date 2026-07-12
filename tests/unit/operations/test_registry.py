@@ -75,4 +75,4 @@ def test_registry_and_definition_validation() -> None:
             lambda: None,
             lambda: None,
         )
-    assert operation_registry.all() == ()
+    assert tuple(str(item.id) for item in operation_registry.all()) == ("M03-01",)

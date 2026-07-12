@@ -80,8 +80,7 @@ registers the first academic operation.
 C08 adds shared `QThreadPool` execution with typed progress, success, failure, and cancellation
 outcomes. Preview requests debounce for 200 ms by default and use latest-preview-wins semantics;
 preview inputs may be reduced in resolution, while Apply always receives full-resolution inputs.
-Cancellation is cooperative. The production registry remains empty until C10; C09 connects this
-infrastructure to the generic workspace.
+Cancellation is cooperative. C09 connects this infrastructure to the generic workspace.
 
 ## Generic operation workspace
 
@@ -89,8 +88,18 @@ C09 connects the operation contracts and threaded execution to a reusable academ
 Inputs appear before parameters, with explicit Original and Current Result source choices.
 Preview or Run is non-destructive; Apply reruns at full resolution and creates one history entry.
 Input, parameter, and execution failures remain inline in the workspace. The production registry
-is still empty: C10 adds Image Negative as the first operation, and C11 adds navigation and
-generated parameter controls.
+supports custom editors and presenters; C11 adds complete navigation and generated parameter
+controls.
+
+## Image Negative
+
+C10 registers M03-01 Image Negative as the first academic operation. It supports Luminance only,
+Each RGB channel, and Grayscale output colour handling for RGB and grayscale images. Preview is
+non-destructive and presents the exact input beside the negative with a collapsible input–output
+mapping curve. Apply reruns at full resolution and creates one undoable history entry; Undo, Redo,
+and image export use the existing document workflow. The production registry checkpoint is one
+academic tool. The rest of Module 3 is not implemented; C11 adds complete navigation and generic
+parameter controls.
 
 ## Architecture principles
 

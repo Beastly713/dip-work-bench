@@ -86,8 +86,9 @@ def test_reset_undo_redo_and_cancelled_replacement(qtbot, tmp_path, monkeypatch)
     monkeypatch.setattr(window, "_confirm_replacement", lambda: False)
     assert not window.open_primary_image_path(source)
     assert window.document_controller.current_image is current
-    for key in ("compare", "export_result", "add_report"):
+    for key in ("compare", "add_report"):
         assert not window.action_map[key].isEnabled()
+    assert window.action_map["export_result"].isEnabled()
 
 
 def test_home_open_uses_dialog_and_stale_copy_is_gone(qtbot, tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
