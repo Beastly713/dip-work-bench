@@ -1,0 +1,92 @@
+{
+  "operation_id": "M01-02",
+  "operation_name": "Black-and-White Thresholding",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "manual": {
+        "mode": "manual",
+        "threshold": 128,
+        "polarity": "bright_foreground"
+      },
+      "otsu": {
+        "mode": "otsu",
+        "threshold": 128,
+        "polarity": "bright_foreground"
+      }
+    },
+    "notes": "Manual and Otsu thresholding are the two meaningful binary variants."
+  },
+  "artifacts": [
+    {
+      "key": "binary_image",
+      "type": "mask",
+      "filename": "result_manual.png",
+      "description": "Binary Image"
+    },
+    {
+      "key": "binary_image",
+      "type": "mask",
+      "filename": "result_otsu.png",
+      "description": "Binary Image"
+    },
+    {
+      "key": "comparison",
+      "type": "image",
+      "filename": "comparison.png",
+      "description": "Manual/Otsu comparison plate"
+    }
+  ],
+  "metrics": {
+    "Threshold Used": 117.0,
+    "White Pixels": 152991,
+    "Black Pixels": 109153,
+    "White Percentage": 58.36143493652344,
+    "Black Percentage": 41.63856506347656
+  },
+  "attempt_log": [
+    {
+      "suffix": "manual",
+      "parameters": {
+        "mode": "manual",
+        "threshold": 128,
+        "polarity": "bright_foreground"
+      },
+      "notes": "Manual threshold at the mid-gray value.",
+      "metrics": {
+        "Threshold Used": 128.0,
+        "White Pixels": 131597,
+        "Black Pixels": 130547,
+        "White Percentage": 50.20027160644531,
+        "Black Percentage": 49.79972839355469
+      },
+      "status": "success"
+    },
+    {
+      "suffix": "otsu",
+      "parameters": {
+        "mode": "otsu",
+        "threshold": 128,
+        "polarity": "bright_foreground"
+      },
+      "notes": "Otsu automatically estimates the threshold.",
+      "metrics": {
+        "Threshold Used": 117.0,
+        "White Pixels": 152991,
+        "Black Pixels": 109153,
+        "White Percentage": 58.36143493652344,
+        "Black Percentage": 41.63856506347656
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

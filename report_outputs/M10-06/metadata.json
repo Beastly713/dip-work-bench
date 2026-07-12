@@ -1,0 +1,72 @@
+{
+  "operation_id": "M10-06",
+  "operation_name": "Harris Corner Detection",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "block_size": 2,
+      "aperture_size": 3,
+      "harris_k": 0.04,
+      "quality_level": 0.01,
+      "minimum_distance": 10,
+      "maximum_corners": 100,
+      "subpixel_refinement": false
+    },
+    "notes": "Harris corners are limited to the strongest 100 detections."
+  },
+  "artifacts": [
+    {
+      "key": "detected_corners",
+      "type": "overlay",
+      "filename": "overlay.png",
+      "description": "Detected Corners"
+    },
+    {
+      "key": "harris_response_display",
+      "type": "image",
+      "filename": "harris_response.png",
+      "description": "Harris Response"
+    },
+    {
+      "key": "corner_detections",
+      "type": "csv",
+      "filename": "corner_detections.csv",
+      "description": "Corner Detections"
+    }
+  ],
+  "metrics": {
+    "Detected Corners": 100,
+    "Maximum Harris Response": 25502720.0,
+    "Response Threshold": 255027.2
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "block_size": 2,
+        "aperture_size": 3,
+        "harris_k": 0.04,
+        "quality_level": 0.01,
+        "minimum_distance": 10,
+        "maximum_corners": 100,
+        "subpixel_refinement": false
+      },
+      "notes": "Harris corners are limited to the strongest 100 detections.",
+      "metrics": {
+        "Detected Corners": 100,
+        "Maximum Harris Response": 25502720.0,
+        "Response Threshold": 255027.2
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

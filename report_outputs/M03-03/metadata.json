@@ -1,0 +1,90 @@
+{
+  "operation_id": "M03-03",
+  "operation_name": "Gamma Correction",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "gamma_0_6": {
+        "gamma": 0.6
+      },
+      "gamma_1_8": {
+        "gamma": 1.8
+      }
+    },
+    "notes": "Two gamma values demonstrate opposite brightness effects without clutter."
+  },
+  "artifacts": [
+    {
+      "key": "gamma_corrected_image",
+      "type": "image",
+      "filename": "result_gamma_0_6.png",
+      "description": "Gamma-Corrected Image"
+    },
+    {
+      "key": "gamma_curve",
+      "type": "curve",
+      "filename": "gamma_curve_0_6.png",
+      "description": "Gamma Transformation Curve"
+    },
+    {
+      "key": "gamma_curve",
+      "type": "csv",
+      "filename": "gamma_curve_0_6.csv",
+      "description": "Gamma Transformation Curve"
+    },
+    {
+      "key": "gamma_corrected_image",
+      "type": "image",
+      "filename": "result_gamma_1_8.png",
+      "description": "Gamma-Corrected Image"
+    },
+    {
+      "key": "gamma_curve",
+      "type": "curve",
+      "filename": "gamma_curve_1_8.png",
+      "description": "Gamma Transformation Curve"
+    },
+    {
+      "key": "gamma_curve",
+      "type": "csv",
+      "filename": "gamma_curve_1_8.csv",
+      "description": "Gamma Transformation Curve"
+    },
+    {
+      "key": "comparison",
+      "type": "image",
+      "filename": "comparison.png",
+      "description": "Variant comparison plate"
+    }
+  ],
+  "metrics": {},
+  "attempt_log": [
+    {
+      "suffix": "gamma_0_6",
+      "parameters": {
+        "gamma": 0.6
+      },
+      "notes": "Gamma below 1 brightens midtones.",
+      "metrics": {},
+      "status": "success"
+    },
+    {
+      "suffix": "gamma_1_8",
+      "parameters": {
+        "gamma": 1.8
+      },
+      "notes": "Gamma above 1 darkens midtones.",
+      "metrics": {},
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

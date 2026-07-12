@@ -1,0 +1,158 @@
+{
+  "operation_id": "M08-01",
+  "operation_name": "Add Noise",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "gaussian": {
+        "noise_type": "gaussian",
+        "processing": "luminance",
+        "seed": 42,
+        "gaussian_mean": 0.0,
+        "gaussian_std": 20.0,
+        "salt_probability": 0.05,
+        "pepper_probability": 0.05,
+        "speckle_std": 0.1
+      },
+      "salt_and_pepper": {
+        "noise_type": "salt_and_pepper",
+        "processing": "luminance",
+        "seed": 42,
+        "gaussian_mean": 0.0,
+        "gaussian_std": 20.0,
+        "salt_probability": 0.03,
+        "pepper_probability": 0.03,
+        "speckle_std": 0.1
+      },
+      "speckle": {
+        "noise_type": "speckle",
+        "processing": "luminance",
+        "seed": 42,
+        "gaussian_mean": 0.0,
+        "gaussian_std": 20.0,
+        "salt_probability": 0.05,
+        "pepper_probability": 0.05,
+        "speckle_std": 0.1
+      }
+    },
+    "notes": "Three representative noise families are run with a fixed seed."
+  },
+  "artifacts": [
+    {
+      "key": "noisy_image",
+      "type": "image",
+      "filename": "result_gaussian.png",
+      "description": "Noisy Image"
+    },
+    {
+      "key": "noise_distribution",
+      "type": "graph",
+      "filename": "noise_distribution_gaussian.png",
+      "description": "Applied Noise Distribution"
+    },
+    {
+      "key": "noise_distribution",
+      "type": "csv",
+      "filename": "noise_distribution_gaussian.csv",
+      "description": "Applied Noise Distribution"
+    },
+    {
+      "key": "noisy_image",
+      "type": "image",
+      "filename": "result_salt_and_pepper.png",
+      "description": "Noisy Image"
+    },
+    {
+      "key": "noisy_image",
+      "type": "image",
+      "filename": "result_speckle.png",
+      "description": "Noisy Image"
+    },
+    {
+      "key": "comparison",
+      "type": "image",
+      "filename": "comparison.png",
+      "description": "Variant comparison plate"
+    }
+  ],
+  "metrics": {
+    "Seed": 42,
+    "Mean Applied Delta": -0.014118194580078125,
+    "Standard Deviation of Applied Delta": 13.294828012847004,
+    "Changed Pixels Percentage": 95.98808288574219
+  },
+  "attempt_log": [
+    {
+      "suffix": "gaussian",
+      "parameters": {
+        "noise_type": "gaussian",
+        "processing": "luminance",
+        "seed": 42,
+        "gaussian_mean": 0.0,
+        "gaussian_std": 20.0,
+        "salt_probability": 0.05,
+        "pepper_probability": 0.05,
+        "speckle_std": 0.1
+      },
+      "notes": "Gaussian noise with fixed seed.",
+      "metrics": {
+        "Seed": 42,
+        "Mean Applied Delta": -0.002086639404296875,
+        "Standard Deviation of Applied Delta": 19.976478082601464,
+        "Changed Pixels Percentage": 97.98736572265625
+      },
+      "status": "success"
+    },
+    {
+      "suffix": "salt_and_pepper",
+      "parameters": {
+        "noise_type": "salt_and_pepper",
+        "processing": "luminance",
+        "seed": 42,
+        "gaussian_mean": 0.0,
+        "gaussian_std": 20.0,
+        "salt_probability": 0.03,
+        "pepper_probability": 0.03,
+        "speckle_std": 0.1
+      },
+      "notes": "Balanced salt-and-pepper impulse noise.",
+      "metrics": {
+        "Seed": 42,
+        "Mean Applied Delta": 0.20400238037109375,
+        "Standard Deviation of Applied Delta": 33.230261449982216,
+        "Changed Pixels Percentage": 5.942535400390625
+      },
+      "status": "success"
+    },
+    {
+      "suffix": "speckle",
+      "parameters": {
+        "noise_type": "speckle",
+        "processing": "luminance",
+        "seed": 42,
+        "gaussian_mean": 0.0,
+        "gaussian_std": 20.0,
+        "salt_probability": 0.05,
+        "pepper_probability": 0.05,
+        "speckle_std": 0.1
+      },
+      "notes": "Multiplicative speckle noise.",
+      "metrics": {
+        "Seed": 42,
+        "Mean Applied Delta": -0.014118194580078125,
+        "Standard Deviation of Applied Delta": 13.294828012847004,
+        "Changed Pixels Percentage": 95.98808288574219
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

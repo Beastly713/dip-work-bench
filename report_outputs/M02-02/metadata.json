@@ -1,0 +1,42 @@
+{
+  "operation_id": "M02-02",
+  "operation_name": "Brightness and Contrast",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "brightness": 25,
+      "contrast": 1.15
+    },
+    "notes": "A moderate brightness and contrast increase keeps Lena recognizable."
+  },
+  "artifacts": [
+    {
+      "key": "adjusted_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Adjusted Image"
+    }
+  ],
+  "metrics": {},
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "brightness": 25,
+        "contrast": 1.15
+      },
+      "notes": "A moderate brightness and contrast increase keeps Lena recognizable.",
+      "metrics": {},
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

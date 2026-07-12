@@ -1,0 +1,60 @@
+{
+  "operation_id": "M06-03",
+  "operation_name": "Laplacian Response",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "neighbourhood": "eight",
+      "display": "signed_heatmap",
+      "scale": 1.0
+    },
+    "notes": "The eight-neighbour signed heatmap shows positive and negative second derivatives."
+  },
+  "artifacts": [
+    {
+      "key": "laplacian_response",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Laplacian Response"
+    },
+    {
+      "key": "laplacian_kernel",
+      "type": "csv",
+      "filename": "laplacian_kernel.csv",
+      "description": "Laplacian Kernel"
+    }
+  ],
+  "metrics": {
+    "Signed Minimum": -601.0,
+    "Signed Maximum": 499.0,
+    "Maximum Absolute Response": 601.0,
+    "Kernel Sum": 0.0
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "neighbourhood": "eight",
+        "display": "signed_heatmap",
+        "scale": 1.0
+      },
+      "notes": "The eight-neighbour signed heatmap shows positive and negative second derivatives.",
+      "metrics": {
+        "Signed Minimum": -601.0,
+        "Signed Maximum": 499.0,
+        "Maximum Absolute Response": 601.0,
+        "Kernel Sum": 0.0
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

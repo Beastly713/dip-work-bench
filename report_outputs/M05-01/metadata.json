@@ -1,0 +1,48 @@
+{
+  "operation_id": "M05-01",
+  "operation_name": "Blur and Neighbourhood Filters",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "filter_method": "gaussian",
+      "kernel_size": 5,
+      "gaussian_sigma": 1.0,
+      "border": "reflect",
+      "constant_value": 0
+    },
+    "notes": "A 5x5 Gaussian blur gives a smooth, meaningful denoising example."
+  },
+  "artifacts": [
+    {
+      "key": "filtered_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Filtered Image"
+    }
+  ],
+  "metrics": {},
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "filter_method": "gaussian",
+        "kernel_size": 5,
+        "gaussian_sigma": 1.0,
+        "border": "reflect",
+        "constant_value": 0
+      },
+      "notes": "A 5x5 Gaussian blur gives a smooth, meaningful denoising example.",
+      "metrics": {},
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

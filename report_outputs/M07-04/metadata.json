@@ -1,0 +1,72 @@
+{
+  "operation_id": "M07-04",
+  "operation_name": "Frequency-Domain High-Pass Filter",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "cutoff_percent": 10.0
+    },
+    "notes": "The high-pass filter suppresses smooth low-frequency content."
+  },
+  "artifacts": [
+    {
+      "key": "high_pass_result",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Normalized High-Pass Response"
+    },
+    {
+      "key": "high_pass_input_spectrum",
+      "type": "image",
+      "filename": "input_spectrum.png",
+      "description": "Input Magnitude Spectrum"
+    },
+    {
+      "key": "high_pass_mask",
+      "type": "mask",
+      "filename": "frequency_mask.png",
+      "description": "High-Pass Frequency Mask"
+    },
+    {
+      "key": "high_pass_filtered_spectrum",
+      "type": "image",
+      "filename": "filtered_spectrum.png",
+      "description": "Filtered Magnitude Spectrum"
+    }
+  ],
+  "metrics": {
+    "Cutoff Radius": 36.20386719675123,
+    "Retained Frequency Bins": 258027,
+    "Retained Frequency Percentage": 98.42948913574219,
+    "Raw Response Minimum": -101.45262145996094,
+    "Raw Response Maximum": 110.2700424194336,
+    "Maximum Absolute Response": 110.2700424194336
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "cutoff_percent": 10.0
+      },
+      "notes": "The high-pass filter suppresses smooth low-frequency content.",
+      "metrics": {
+        "Cutoff Radius": 36.20386719675123,
+        "Retained Frequency Bins": 258027,
+        "Retained Frequency Percentage": 98.42948913574219,
+        "Raw Response Minimum": -101.45262145996094,
+        "Raw Response Maximum": 110.2700424194336,
+        "Maximum Absolute Response": 110.2700424194336
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

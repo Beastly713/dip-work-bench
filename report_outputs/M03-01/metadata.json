@@ -1,0 +1,40 @@
+{
+  "operation_id": "M03-01",
+  "operation_name": "Image Negative",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "colour_handling": "luminance"
+    },
+    "notes": "Default luminance negative emphasizes tonal inversion."
+  },
+  "artifacts": [
+    {
+      "key": "negative_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Negative Image"
+    }
+  ],
+  "metrics": {},
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "colour_handling": "luminance"
+      },
+      "notes": "Default luminance negative emphasizes tonal inversion.",
+      "metrics": {},
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

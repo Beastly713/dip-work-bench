@@ -1,0 +1,68 @@
+{
+  "operation_id": "M06-06",
+  "operation_name": "High-Boost Filtering",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "kernel_size": 5,
+      "sigma": 1.0,
+      "boost": 1.8
+    },
+    "notes": "High-boost filtering uses a stronger detail emphasis than unsharp masking."
+  },
+  "artifacts": [
+    {
+      "key": "high_boost_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "High-Boost Image"
+    },
+    {
+      "key": "blurred_image",
+      "type": "image",
+      "filename": "blurred_image.png",
+      "description": "Blurred Image"
+    },
+    {
+      "key": "detail_display",
+      "type": "image",
+      "filename": "detail_mask.png",
+      "description": "Detail Mask"
+    }
+  ],
+  "metrics": {
+    "Detail Minimum": -52.70402526855469,
+    "Detail Maximum": 68.09034729003906,
+    "Detail Standard Deviation": 5.469554424285889,
+    "Input Standard Deviation": 47.85512161254883,
+    "Output Standard Deviation": 51.27395783764351
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "kernel_size": 5,
+        "sigma": 1.0,
+        "boost": 1.8
+      },
+      "notes": "High-boost filtering uses a stronger detail emphasis than unsharp masking.",
+      "metrics": {
+        "Detail Minimum": -52.70402526855469,
+        "Detail Maximum": 68.09034729003906,
+        "Detail Standard Deviation": 5.469554424285889,
+        "Input Standard Deviation": 47.85512161254883,
+        "Output Standard Deviation": 51.27395783764351
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

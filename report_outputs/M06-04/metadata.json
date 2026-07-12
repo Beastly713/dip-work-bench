@@ -1,0 +1,66 @@
+{
+  "operation_id": "M06-04",
+  "operation_name": "Laplacian Sharpening",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "neighbourhood": "four",
+      "strength": 1.0,
+      "colour_handling": "preserve_luminance_colour"
+    },
+    "notes": "Laplacian sharpening enhances detail while preserving colour appearance."
+  },
+  "artifacts": [
+    {
+      "key": "sharpened_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Sharpened Image"
+    },
+    {
+      "key": "laplacian_display",
+      "type": "image",
+      "filename": "laplacian_response.png",
+      "description": "Laplacian Display"
+    },
+    {
+      "key": "laplacian_kernel",
+      "type": "csv",
+      "filename": "laplacian_kernel.csv",
+      "description": "Laplacian Kernel"
+    }
+  ],
+  "metrics": {
+    "Laplacian Minimum": -239.0,
+    "Laplacian Maximum": 181.0,
+    "Input Standard Deviation": 47.85512161254883,
+    "Output Standard Deviation": 54.65304922591563
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "neighbourhood": "four",
+        "strength": 1.0,
+        "colour_handling": "preserve_luminance_colour"
+      },
+      "notes": "Laplacian sharpening enhances detail while preserving colour appearance.",
+      "metrics": {
+        "Laplacian Minimum": -239.0,
+        "Laplacian Maximum": 181.0,
+        "Input Standard Deviation": 47.85512161254883,
+        "Output Standard Deviation": 54.65304922591563
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

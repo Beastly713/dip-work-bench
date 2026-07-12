@@ -1,0 +1,84 @@
+{
+  "operation_id": "M09-03",
+  "operation_name": "Colour-Range Segmentation",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "red_range": [
+        150,
+        255
+      ],
+      "green_range": [
+        70,
+        210
+      ],
+      "blue_range": [
+        50,
+        190
+      ]
+    },
+    "notes": "The bounded RGB range selects warm skin/face tones from Lena."
+  },
+  "artifacts": [
+    {
+      "key": "colour_mask",
+      "type": "mask",
+      "filename": "mask.png",
+      "description": "Colour-Range Mask"
+    },
+    {
+      "key": "extracted_region",
+      "type": "image",
+      "filename": "extracted_region.png",
+      "description": "Extracted Region"
+    },
+    {
+      "key": "colour_overlay",
+      "type": "image",
+      "filename": "overlay.png",
+      "description": "Colour-Range Overlay"
+    }
+  ],
+  "metrics": {
+    "Selected Pixels": 168119,
+    "Rejected Pixels": 94025,
+    "Selected Percentage": 64.13230895996094,
+    "Rejected Percentage": 35.86769104003906
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "red_range": [
+          150,
+          255
+        ],
+        "green_range": [
+          70,
+          210
+        ],
+        "blue_range": [
+          50,
+          190
+        ]
+      },
+      "notes": "The bounded RGB range selects warm skin/face tones from Lena.",
+      "metrics": {
+        "Selected Pixels": 168119,
+        "Rejected Pixels": 94025,
+        "Selected Percentage": 64.13230895996094,
+        "Rejected Percentage": 35.86769104003906
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

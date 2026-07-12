@@ -1,0 +1,74 @@
+{
+  "operation_id": "M04-01",
+  "operation_name": "Histogram Viewer and Analysis",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "mode": "ordinary",
+      "bins": 256
+    },
+    "notes": "Ordinary 256-bin histograms show the tonal distribution directly."
+  },
+  "artifacts": [
+    {
+      "key": "rgb_histogram",
+      "type": "graph",
+      "filename": "rgb_histogram.png",
+      "description": "RGB Histogram"
+    },
+    {
+      "key": "rgb_histogram",
+      "type": "csv",
+      "filename": "rgb_histogram.csv",
+      "description": "RGB Histogram"
+    },
+    {
+      "key": "grayscale_histogram",
+      "type": "graph",
+      "filename": "grayscale_histogram.png",
+      "description": "Grayscale Histogram"
+    },
+    {
+      "key": "grayscale_histogram",
+      "type": "csv",
+      "filename": "grayscale_histogram.csv",
+      "description": "Grayscale Histogram"
+    }
+  ],
+  "metrics": {
+    "Mean": 124.0485610961914,
+    "Variance": 2290.1584160508937,
+    "Standard Deviation": 47.855599631086996,
+    "Pixel Count": 262144,
+    "Minimum Intensity": 25,
+    "Maximum Intensity": 245
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "mode": "ordinary",
+        "bins": 256
+      },
+      "notes": "Ordinary 256-bin histograms show the tonal distribution directly.",
+      "metrics": {
+        "Mean": 124.0485610961914,
+        "Variance": 2290.1584160508937,
+        "Standard Deviation": 47.855599631086996,
+        "Pixel Count": 262144,
+        "Minimum Intensity": 25,
+        "Maximum Intensity": 245
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

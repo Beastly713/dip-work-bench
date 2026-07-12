@@ -1,0 +1,64 @@
+{
+  "operation_id": "M09-02",
+  "operation_name": "Intensity-Range Thresholding",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "intensity_range": [
+        80,
+        180
+      ],
+      "include_boundaries": true
+    },
+    "notes": "The chosen intensity band selects midtones and visualizes them as an overlay."
+  },
+  "artifacts": [
+    {
+      "key": "range_mask",
+      "type": "mask",
+      "filename": "mask.png",
+      "description": "Intensity-Range Mask"
+    },
+    {
+      "key": "range_overlay",
+      "type": "image",
+      "filename": "overlay.png",
+      "description": "Selected-Range Overlay"
+    }
+  ],
+  "metrics": {
+    "Selected Pixels": 173762,
+    "Rejected Pixels": 88382,
+    "Selected Percentage": 66.28494262695312,
+    "Rejected Percentage": 33.715057373046875
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "intensity_range": [
+          80,
+          180
+        ],
+        "include_boundaries": true
+      },
+      "notes": "The chosen intensity band selects midtones and visualizes them as an overlay.",
+      "metrics": {
+        "Selected Pixels": 173762,
+        "Rejected Pixels": 88382,
+        "Selected Percentage": 66.28494262695312,
+        "Rejected Percentage": 33.715057373046875
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

@@ -1,0 +1,40 @@
+{
+  "operation_id": "M01-01",
+  "operation_name": "Colour to Grayscale",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "method": "luminance"
+    },
+    "notes": "Luminance grayscale conversion gives a professor-friendly single-channel baseline."
+  },
+  "artifacts": [
+    {
+      "key": "grayscale_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Grayscale Image"
+    }
+  ],
+  "metrics": {},
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "method": "luminance"
+      },
+      "notes": "Luminance grayscale conversion gives a professor-friendly single-channel baseline.",
+      "metrics": {},
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

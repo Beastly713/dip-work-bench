@@ -1,0 +1,52 @@
+{
+  "operation_id": "M07-01",
+  "operation_name": "Fourier Magnitude Spectrum",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "center_spectrum": true,
+      "logarithmic_scale": true,
+      "show_phase": false
+    },
+    "notes": "A centered logarithmic magnitude spectrum makes frequency energy visible."
+  },
+  "artifacts": [
+    {
+      "key": "fourier_magnitude",
+      "type": "image",
+      "filename": "magnitude_spectrum.png",
+      "description": "Fourier Magnitude Spectrum"
+    }
+  ],
+  "metrics": {
+    "Minimum Magnitude": 1.8063695430755615,
+    "Maximum Magnitude": 32518586.0,
+    "Mean Magnitude": 5316.04150390625
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "center_spectrum": true,
+        "logarithmic_scale": true,
+        "show_phase": false
+      },
+      "notes": "A centered logarithmic magnitude spectrum makes frequency energy visible.",
+      "metrics": {
+        "Minimum Magnitude": 1.8063695430755615,
+        "Maximum Magnitude": 32518586.0,
+        "Mean Magnitude": 5316.04150390625
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

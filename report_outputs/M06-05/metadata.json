@@ -1,0 +1,68 @@
+{
+  "operation_id": "M06-05",
+  "operation_name": "Unsharp Masking",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "kernel_size": 5,
+      "sigma": 1.0,
+      "amount": 0.7
+    },
+    "notes": "Unsharp masking adds a controlled detail mask back to the source."
+  },
+  "artifacts": [
+    {
+      "key": "unsharp_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Unsharp Image"
+    },
+    {
+      "key": "blurred_image",
+      "type": "image",
+      "filename": "blurred_image.png",
+      "description": "Blurred Image"
+    },
+    {
+      "key": "detail_display",
+      "type": "image",
+      "filename": "detail_mask.png",
+      "description": "Detail Mask"
+    }
+  ],
+  "metrics": {
+    "Detail Minimum": -52.70402526855469,
+    "Detail Maximum": 68.09034729003906,
+    "Detail Standard Deviation": 5.469554424285889,
+    "Input Standard Deviation": 47.85512161254883,
+    "Output Standard Deviation": 49.00347767318827
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "kernel_size": 5,
+        "sigma": 1.0,
+        "amount": 0.7
+      },
+      "notes": "Unsharp masking adds a controlled detail mask back to the source.",
+      "metrics": {
+        "Detail Minimum": -52.70402526855469,
+        "Detail Maximum": 68.09034729003906,
+        "Detail Standard Deviation": 5.469554424285889,
+        "Input Standard Deviation": 47.85512161254883,
+        "Output Standard Deviation": 49.00347767318827
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

@@ -1,0 +1,60 @@
+{
+  "operation_id": "M01-03",
+  "operation_name": "Colour-Channel Extraction",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "channel": "all",
+      "display": "intensity"
+    },
+    "notes": "All RGB channels are shown as intensity images."
+  },
+  "artifacts": [
+    {
+      "key": "red_channel",
+      "type": "image",
+      "filename": "red_channel.png",
+      "description": "Red Channel"
+    },
+    {
+      "key": "green_channel",
+      "type": "image",
+      "filename": "green_channel.png",
+      "description": "Green Channel"
+    },
+    {
+      "key": "blue_channel",
+      "type": "image",
+      "filename": "blue_channel.png",
+      "description": "Blue Channel"
+    },
+    {
+      "key": "triptych",
+      "type": "image",
+      "filename": "triptych.png",
+      "description": "RGB channel triptych"
+    }
+  ],
+  "metrics": {},
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "channel": "all",
+        "display": "intensity"
+      },
+      "notes": "All RGB channels are shown as intensity images.",
+      "metrics": {},
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

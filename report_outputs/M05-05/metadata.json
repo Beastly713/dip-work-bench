@@ -1,0 +1,106 @@
+{
+  "operation_id": "M05-05",
+  "operation_name": "Custom Convolution",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "preset": "custom",
+      "kernel_size": 3,
+      "kernel": [
+        [
+          -2.0,
+          -1.0,
+          0.0
+        ],
+        [
+          -1.0,
+          1.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0,
+          2.0
+        ]
+      ],
+      "normalize_kernel": false,
+      "colour_handling": "per_channel",
+      "border": "reflect",
+      "constant_value": 0,
+      "display_mapping": "normalized"
+    },
+    "notes": "The specified directional custom kernel is saved with its resolved/flipped forms."
+  },
+  "artifacts": [
+    {
+      "key": "convolution_result",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Convolution Result"
+    },
+    {
+      "key": "resolved_kernel",
+      "type": "csv",
+      "filename": "resolved_kernel.csv",
+      "description": "Resolved Kernel"
+    },
+    {
+      "key": "flipped_kernel",
+      "type": "csv",
+      "filename": "flipped_kernel.csv",
+      "description": "Flipped Kernel Used"
+    }
+  ],
+  "metrics": {
+    "Raw Response Minimum": -548.0,
+    "Raw Response Maximum": 908.0,
+    "Kernel Sum": 1.0
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "preset": "custom",
+        "kernel_size": 3,
+        "kernel": [
+          [
+            -2.0,
+            -1.0,
+            0.0
+          ],
+          [
+            -1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0,
+            2.0
+          ]
+        ],
+        "normalize_kernel": false,
+        "colour_handling": "per_channel",
+        "border": "reflect",
+        "constant_value": 0,
+        "display_mapping": "normalized"
+      },
+      "notes": "The specified directional custom kernel is saved with its resolved/flipped forms.",
+      "metrics": {
+        "Raw Response Minimum": -548.0,
+        "Raw Response Maximum": 908.0,
+        "Kernel Sum": 1.0
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

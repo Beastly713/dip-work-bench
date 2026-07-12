@@ -1,0 +1,78 @@
+{
+  "operation_id": "M06-02",
+  "operation_name": "Sobel Edge Enhancement",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "kernel_size": 3,
+      "scale": 1.0,
+      "threshold_enabled": false,
+      "threshold": 100
+    },
+    "notes": "Unthresholded Sobel output preserves continuous edge magnitude."
+  },
+  "artifacts": [
+    {
+      "key": "sobel_x_display",
+      "type": "image",
+      "filename": "sobel_x.png",
+      "description": "Horizontal Response"
+    },
+    {
+      "key": "sobel_y_display",
+      "type": "image",
+      "filename": "sobel_y.png",
+      "description": "Vertical Response"
+    },
+    {
+      "key": "sobel_result",
+      "type": "image",
+      "filename": "sobel_magnitude.png",
+      "description": "Sobel Edge Result"
+    },
+    {
+      "key": "triptych",
+      "type": "image",
+      "filename": "triptych.png",
+      "description": "Directional response triptych"
+    }
+  ],
+  "metrics": {
+    "Gx Minimum": -688.0,
+    "Gx Maximum": 640.0,
+    "Gy Minimum": -644.0,
+    "Gy Maximum": 469.0,
+    "Magnitude Maximum": 709.0740356445312,
+    "Edge Pixels": 0
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "kernel_size": 3,
+        "scale": 1.0,
+        "threshold_enabled": false,
+        "threshold": 100
+      },
+      "notes": "Unthresholded Sobel output preserves continuous edge magnitude.",
+      "metrics": {
+        "Gx Minimum": -688.0,
+        "Gx Maximum": 640.0,
+        "Gy Minimum": -644.0,
+        "Gy Maximum": 469.0,
+        "Magnitude Maximum": 709.0740356445312,
+        "Edge Pixels": 0
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

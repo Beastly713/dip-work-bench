@@ -1,0 +1,70 @@
+{
+  "operation_id": "M06-01",
+  "operation_name": "First-Order Gradient",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "method": "prewitt"
+    },
+    "notes": "Prewitt gradients expose horizontal, vertical and combined edge strength."
+  },
+  "artifacts": [
+    {
+      "key": "gradient_x_display",
+      "type": "image",
+      "filename": "gradient_x.png",
+      "description": "Horizontal Response"
+    },
+    {
+      "key": "gradient_y_display",
+      "type": "image",
+      "filename": "gradient_y.png",
+      "description": "Vertical Response"
+    },
+    {
+      "key": "gradient_magnitude",
+      "type": "image",
+      "filename": "gradient_magnitude.png",
+      "description": "Gradient Magnitude"
+    },
+    {
+      "key": "triptych",
+      "type": "image",
+      "filename": "triptych.png",
+      "description": "Directional response triptych"
+    }
+  ],
+  "metrics": {
+    "Gx Minimum": -517.0,
+    "Gx Maximum": 474.0,
+    "Gy Minimum": -473.0,
+    "Gy Maximum": 346.0,
+    "Magnitude Maximum": 517.1170043945312
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "method": "prewitt"
+      },
+      "notes": "Prewitt gradients expose horizontal, vertical and combined edge strength.",
+      "metrics": {
+        "Gx Minimum": -517.0,
+        "Gx Maximum": 474.0,
+        "Gy Minimum": -473.0,
+        "Gy Maximum": 346.0,
+        "Magnitude Maximum": 517.1170043945312
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

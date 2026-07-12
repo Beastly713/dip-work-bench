@@ -1,0 +1,74 @@
+{
+  "operation_id": "M10-05",
+  "operation_name": "Hough Circle Detection",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "median_kernel": 5,
+      "dp": 1.2,
+      "minimum_distance": 20,
+      "canny_high_threshold": 100.0,
+      "accumulator_threshold": 30.0,
+      "minimum_radius": 5,
+      "maximum_radius": 80,
+      "maximum_circles": 10
+    },
+    "notes": "A bounded Hough circle setup looks for the most salient circular structures."
+  },
+  "artifacts": [
+    {
+      "key": "detected_circles",
+      "type": "overlay",
+      "filename": "overlay.png",
+      "description": "Detected Circles"
+    },
+    {
+      "key": "circle_preprocessed",
+      "type": "image",
+      "filename": "circle_preprocessed.png",
+      "description": "Median-Blurred Input"
+    },
+    {
+      "key": "circle_detections",
+      "type": "csv",
+      "filename": "circle_detections.csv",
+      "description": "Circle Detections"
+    }
+  ],
+  "metrics": {
+    "Detected Circles": 10,
+    "Average Radius": 76.37600250244141,
+    "Largest Radius": 79.2800064086914
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "median_kernel": 5,
+        "dp": 1.2,
+        "minimum_distance": 20,
+        "canny_high_threshold": 100.0,
+        "accumulator_threshold": 30.0,
+        "minimum_radius": 5,
+        "maximum_radius": 80,
+        "maximum_circles": 10
+      },
+      "notes": "A bounded Hough circle setup looks for the most salient circular structures.",
+      "metrics": {
+        "Detected Circles": 10,
+        "Average Radius": 76.37600250244141,
+        "Largest Radius": 79.2800064086914
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

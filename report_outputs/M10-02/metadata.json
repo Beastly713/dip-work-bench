@@ -1,0 +1,70 @@
+{
+  "operation_id": "M10-02",
+  "operation_name": "Laplacian of Gaussian Edge Detection",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "gaussian_kernel": 5,
+      "sigma": 1.0,
+      "neighbourhood": "eight",
+      "zero_crossing_contrast": 10.0
+    },
+    "notes": "LoG uses Gaussian smoothing followed by zero-crossing detection."
+  },
+  "artifacts": [
+    {
+      "key": "log_edges",
+      "type": "mask",
+      "filename": "result.png",
+      "description": "LoG Edge Map"
+    },
+    {
+      "key": "log_smoothed",
+      "type": "image",
+      "filename": "smoothed_input.png",
+      "description": "Smoothed Input"
+    },
+    {
+      "key": "log_response_display",
+      "type": "image",
+      "filename": "signed_response.png",
+      "description": "Signed Response"
+    }
+  ],
+  "metrics": {
+    "Response Minimum": -186.28863525390625,
+    "Response Maximum": 151.16818237304688,
+    "Maximum Absolute Response": 186.28863525390625,
+    "Edge Pixels": 110337,
+    "Edge Percentage": 42.09022521972656
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "gaussian_kernel": 5,
+        "sigma": 1.0,
+        "neighbourhood": "eight",
+        "zero_crossing_contrast": 10.0
+      },
+      "notes": "LoG uses Gaussian smoothing followed by zero-crossing detection.",
+      "metrics": {
+        "Response Minimum": -186.28863525390625,
+        "Response Maximum": 151.16818237304688,
+        "Maximum Absolute Response": 186.28863525390625,
+        "Edge Pixels": 110337,
+        "Edge Percentage": 42.09022521972656
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

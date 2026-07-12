@@ -1,0 +1,74 @@
+{
+  "operation_id": "M10-04",
+  "operation_name": "Hough Line Detection",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "canny_low": 50,
+      "canny_high": 150,
+      "rho_resolution": 1.0,
+      "theta_resolution_degrees": 1.0,
+      "vote_threshold": 50,
+      "minimum_line_length": 30,
+      "maximum_line_gap": 10,
+      "maximum_lines": 30
+    },
+    "notes": "A bounded Hough line setup detects the strongest line segments."
+  },
+  "artifacts": [
+    {
+      "key": "detected_lines",
+      "type": "overlay",
+      "filename": "overlay.png",
+      "description": "Detected Lines"
+    },
+    {
+      "key": "line_edge_map",
+      "type": "mask",
+      "filename": "line_edge_map.png",
+      "description": "Canny Edge Map"
+    },
+    {
+      "key": "line_detections",
+      "type": "csv",
+      "filename": "line_detections.csv",
+      "description": "Line Detections"
+    }
+  ],
+  "metrics": {
+    "Detected Lines": 30,
+    "Total Line Length": 2970.087680604203,
+    "Longest Line Length": 132.0
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "canny_low": 50,
+        "canny_high": 150,
+        "rho_resolution": 1.0,
+        "theta_resolution_degrees": 1.0,
+        "vote_threshold": 50,
+        "minimum_line_length": 30,
+        "maximum_line_gap": 10,
+        "maximum_lines": 30
+      },
+      "notes": "A bounded Hough line setup detects the strongest line segments.",
+      "metrics": {
+        "Detected Lines": 30,
+        "Total Line Length": 2970.087680604203,
+        "Longest Line Length": 132.0
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

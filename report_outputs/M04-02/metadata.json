@@ -1,0 +1,82 @@
+{
+  "operation_id": "M04-02",
+  "operation_name": "Histogram Equalization",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {},
+    "notes": "Equalization is run once using the implemented histogram mapping."
+  },
+  "artifacts": [
+    {
+      "key": "equalized_image",
+      "type": "image",
+      "filename": "result.png",
+      "description": "Equalized Image"
+    },
+    {
+      "key": "histogram_comparison",
+      "type": "graph",
+      "filename": "histogram_comparison.png",
+      "description": "Before and After Histograms"
+    },
+    {
+      "key": "histogram_comparison",
+      "type": "csv",
+      "filename": "histogram_comparison.csv",
+      "description": "Before and After Histograms"
+    },
+    {
+      "key": "input_cdf",
+      "type": "curve",
+      "filename": "input_cdf.png",
+      "description": "Input Cumulative Distribution"
+    },
+    {
+      "key": "input_cdf",
+      "type": "csv",
+      "filename": "input_cdf.csv",
+      "description": "Input Cumulative Distribution"
+    },
+    {
+      "key": "equalization_mapping",
+      "type": "curve",
+      "filename": "equalization_mapping.png",
+      "description": "Equalization Mapping"
+    },
+    {
+      "key": "equalization_mapping",
+      "type": "csv",
+      "filename": "equalization_mapping.csv",
+      "description": "Equalization Mapping"
+    }
+  ],
+  "metrics": {
+    "Input Mean": 124.04857635498047,
+    "Output Mean": 128.2740821838379,
+    "Input Standard Deviation": 47.85512061981409,
+    "Output Standard Deviation": 73.58900642982826
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {},
+      "notes": "Equalization is run once using the implemented histogram mapping.",
+      "metrics": {
+        "Input Mean": 124.04857635498047,
+        "Output Mean": 128.2740821838379,
+        "Input Standard Deviation": 47.85512061981409,
+        "Output Standard Deviation": 73.58900642982826
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

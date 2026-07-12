@@ -1,0 +1,62 @@
+{
+  "operation_id": "M10-01",
+  "operation_name": "Canny Edge Detection",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "blur_kernel": 5,
+      "sigma": 1.0,
+      "low_threshold": 50,
+      "high_threshold": 150,
+      "aperture_size": 3,
+      "l2_gradient": true
+    },
+    "notes": "Canny edges are generated with a standard smoothed two-threshold setup."
+  },
+  "artifacts": [
+    {
+      "key": "canny_edges",
+      "type": "mask",
+      "filename": "result.png",
+      "description": "Canny Edge Map"
+    },
+    {
+      "key": "canny_smoothed",
+      "type": "image",
+      "filename": "smoothed_input.png",
+      "description": "Smoothed Input"
+    }
+  ],
+  "metrics": {
+    "Edge Pixels": 12228,
+    "Edge Percentage": 4.66461181640625
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "blur_kernel": 5,
+        "sigma": 1.0,
+        "low_threshold": 50,
+        "high_threshold": 150,
+        "aperture_size": 3,
+        "l2_gradient": true
+      },
+      "notes": "Canny edges are generated with a standard smoothed two-threshold setup.",
+      "metrics": {
+        "Edge Pixels": 12228,
+        "Edge Percentage": 4.66461181640625
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}

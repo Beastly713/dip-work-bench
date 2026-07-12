@@ -1,0 +1,74 @@
+{
+  "operation_id": "M10-03",
+  "operation_name": "Difference of Gaussian Edge Detection",
+  "input_image": "lena.png",
+  "input_path": "lena.png",
+  "input_summary": {
+    "width": 512,
+    "height": 512,
+    "dtype": "uint8",
+    "channels": 3,
+    "colour_model": "RGB"
+  },
+  "selected_experiment": {
+    "parameters": {
+      "sigma_small": 1.0,
+      "sigma_large": 2.0,
+      "edge_threshold": 5.0
+    },
+    "notes": "DoG compares two blurred scales to reveal edges."
+  },
+  "artifacts": [
+    {
+      "key": "dog_edges",
+      "type": "mask",
+      "filename": "result.png",
+      "description": "DoG Edge Map"
+    },
+    {
+      "key": "dog_small_blur",
+      "type": "image",
+      "filename": "small_sigma_blur.png",
+      "description": "Small-Sigma Blur"
+    },
+    {
+      "key": "dog_large_blur",
+      "type": "image",
+      "filename": "large_sigma_blur.png",
+      "description": "Large-Sigma Blur"
+    },
+    {
+      "key": "dog_response_display",
+      "type": "image",
+      "filename": "signed_response.png",
+      "description": "Signed Response"
+    }
+  ],
+  "metrics": {
+    "Response Minimum": -40.31796646118164,
+    "Response Maximum": 48.603736877441406,
+    "Maximum Absolute Response": 48.603736877441406,
+    "Edge Pixels": 43891,
+    "Edge Percentage": 16.743087768554688
+  },
+  "attempt_log": [
+    {
+      "suffix": "main",
+      "parameters": {
+        "sigma_small": 1.0,
+        "sigma_large": 2.0,
+        "edge_threshold": 5.0
+      },
+      "notes": "DoG compares two blurred scales to reveal edges.",
+      "metrics": {
+        "Response Minimum": -40.31796646118164,
+        "Response Maximum": 48.603736877441406,
+        "Maximum Absolute Response": 48.603736877441406,
+        "Edge Pixels": 43891,
+        "Edge Percentage": 16.743087768554688
+      },
+      "status": "success"
+    }
+  ],
+  "status": "success"
+}
