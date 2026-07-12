@@ -12,6 +12,7 @@ from dip_workbench.controllers import DocumentController, OperationWorkspaceStat
 from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.operations import ModuleId, operation_registry
 from dip_workbench.services import (
+    ExportService,
     FlipDirection,
     ImageIOService,
     ImageTransformService,
@@ -23,6 +24,7 @@ from dip_workbench.ui.operations import (
     ImageNegativeParameterEditor,
     ImageNegativeResultPresenter,
 )
+from dip_workbench.ui.widgets import BeforeAfterComparisonWidget, TransformationCurveWidget
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "m03" / "image_negative_input.png"
 
@@ -41,6 +43,7 @@ def make_window(qtbot, tmp_path):  # type: ignore[no-untyped-def]
         SettingsService(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)),
         controller,
         manager,
+        ExportService(image_io),
     )
     qtbot.addWidget(window)
     window.show()
@@ -79,10 +82,14 @@ def test_image_negative_preview_apply_history_and_export(qtbot, tmp_path) -> Non
 
     presenter = window.operation_workspace._result_presenter
     assert isinstance(presenter, ImageNegativeResultPresenter)
-    assert presenter.input_canvas.current_asset is not None
-    assert presenter.result_canvas.current_asset is not None
-    assert np.array_equal(presenter.input_canvas.current_asset.data, before)
-    assert np.array_equal(presenter.result_canvas.current_asset.data, 255 - before)
+    assert isinstance(presenter.comparison, BeforeAfterComparisonWidget)
+    assert isinstance(presenter.mapping_curve, TransformationCurveWidget)
+    input_canvas = presenter.comparison.side_by_side.panels[0].canvas
+    result_canvas = presenter.comparison.side_by_side.panels[1].canvas
+    assert input_canvas.current_asset is not None
+    assert result_canvas.current_asset is not None
+    assert np.array_equal(input_canvas.current_asset.data, before)
+    assert np.array_equal(result_canvas.current_asset.data, 255 - before)
     presenter.mapping_toggle.click()
     assert presenter.mapping_curve.isVisibleTo(presenter)
 

@@ -12,6 +12,7 @@ from dip_workbench.ui.widgets import (
     OperationResultPresenter,
     ResultWorkspaceHost,
 )
+from dip_workbench.ui.widgets.operation_result_presenter import DisplayedExportTarget
 
 
 class OperationWorkspace(QWidget):
@@ -76,6 +77,8 @@ class OperationWorkspace(QWidget):
             self.operation_header.set_operation(definition)
             operation_id = str(definition.id)
             if operation_id != self._presenter_operation_id:
+                if self._result_presenter is not None:
+                    self._result_presenter.clear_result()
                 candidate = definition.presenter_factory()
                 self._result_presenter = (
                     candidate if isinstance(candidate, OperationResultPresenter) else None
@@ -122,3 +125,12 @@ class OperationWorkspace(QWidget):
     def clear_image(self) -> None:
         self.image_canvas.clear_image()
         self._states.setCurrentIndex(0)
+
+    def displayed_export_target(self) -> DisplayedExportTarget | None:
+        return self.result_workspace.displayed_export_target()
+
+    def supports_before_after_comparison(self) -> bool:
+        return self.result_workspace.supports_before_after_comparison()
+
+    def activate_before_after_comparison(self) -> bool:
+        return self.result_workspace.activate_before_after_comparison()

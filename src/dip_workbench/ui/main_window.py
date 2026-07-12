@@ -27,12 +27,14 @@ from dip_workbench.core import (
     UnsupportedImageError,
 )
 from dip_workbench.execution import OperationExecutionManager
-from dip_workbench.operations import OperationDefinition, operation_registry
+from dip_workbench.operations import ImageArtifact, OperationDefinition, operation_registry
 from dip_workbench.services import (
+    ExportService,
     SettingsService,
 )
 from dip_workbench.ui.pages import HomePage, OperationWorkspace, ReportBuilderPage
 from dip_workbench.ui.panels import NavigationSidebar, ParameterPanel, WorkbenchStatusBar
+from dip_workbench.ui.widgets.operation_result_presenter import DisplayedExportTarget
 
 
 class PageIndex(IntEnum):
@@ -54,11 +56,13 @@ class MainWindow(QMainWindow):
         settings: SettingsService,
         document_controller: DocumentController,
         operation_execution: OperationExecutionManager,
+        export_service: ExportService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.settings = settings
         self.document_controller = document_controller
+        self.export_service = export_service
         self.operation_controller = OperationController(
             document_controller, operation_execution, self
         )
@@ -180,7 +184,7 @@ class MainWindow(QMainWindow):
         self._add_action("about_operation", "About This Operation")
         self._add_action("shortcuts", "Keyboard Shortcuts")
         self._add_action("about", "About DIP Workbench")
-        self._add_action("compare", "Compare")
+        self._add_action("compare", "Before/After Comparison")
         self._add_action("add_report", "Add to Report")
 
     def _create_menus(self) -> None:
@@ -213,6 +217,7 @@ class MainWindow(QMainWindow):
                     "show_navigation",
                     "show_parameters",
                     "show_details",
+                    "compare",
                     "presentation",
                 ),
             ),
@@ -245,6 +250,7 @@ class MainWindow(QMainWindow):
         self.action_map["open"].triggered.connect(self.open_primary_image_dialog)
         self.action_map["save"].triggered.connect(self.save_current_image_dialog)
         self.action_map["export_result"].triggered.connect(self.export_displayed_result_dialog)
+        self.action_map["compare"].triggered.connect(self.activate_before_after_comparison)
         self.action_map["image_negative"].triggered.connect(
             lambda: self.open_operation(operation_registry.get("M03-01"))
         )
@@ -309,6 +315,9 @@ class MainWindow(QMainWindow):
         inputs.open_image_requested.connect(self.open_primary_image_dialog)
         result.open_image_requested.connect(self.open_primary_image_dialog)
         result.cancel_requested.connect(self.operation_controller.cancel)
+        result.displayed_export_target_changed.connect(
+            lambda _target: self.refresh_document_actions()
+        )
         panel.parameter_values_changed.connect(self.operation_controller.parameter_values_changed)
         panel.preview_requested.connect(self.operation_controller.preview_or_run)
         panel.apply_requested.connect(self.operation_controller.apply)
@@ -409,9 +418,12 @@ class MainWindow(QMainWindow):
         self.action_map["clear_preview"].setEnabled(
             self.document_controller.document_store.active_preview is not None
         )
-        result = self.operation_controller.active_result
-        academic_image = result is not None and isinstance(result.primary_artifact.data, ImageAsset)
-        self.action_map["export_result"].setEnabled(active or academic_image)
+        self.action_map["export_result"].setEnabled(self._current_export_target() is not None)
+        self.action_map["compare"].setEnabled(
+            self.operation_workspace.mode_stack.currentWidget()
+            is self.operation_workspace.academic_view
+            and self.operation_workspace.supports_before_after_comparison()
+        )
 
     def open_primary_image_dialog(self) -> None:
         initial = self._initial_directory("paths/last_open_directory")
@@ -500,31 +512,48 @@ class MainWindow(QMainWindow):
         return True
 
     def export_displayed_result_dialog(self) -> None:
-        asset = self._displayed_export_asset()
-        if asset is None:
+        target = self._current_export_target()
+        if target is None:
             return
-        suggestion = (
-            self._initial_directory("paths/last_export_directory") / f"{Path(asset.name).stem}.png"
+        artifact = target.artifact
+        default_extension = self.export_service.default_extension(
+            artifact, has_render_source=target.render_source is not None
         )
-        filters = "PNG (*.png);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
-        if asset.colour_model.value != "BINARY":
-            filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
-        path, _ = QFileDialog.getSaveFileName(
+        suggestion = (
+            self._initial_directory("paths/last_export_directory")
+            / f"{Path(artifact.label).stem}{default_extension}"
+        )
+        extensions = self.export_service.supported_extensions(
+            artifact, has_render_source=target.render_source is not None
+        )
+        filters = ";;".join(
+            f"{extension.upper().lstrip('.')} (*{extension})" for extension in extensions
+        )
+        path, selected = QFileDialog.getSaveFileName(
             self, "Export Displayed Result", str(suggestion), filters
         )
         if path:
-            self.export_displayed_result_path(path)
+            selected_extension = None
+            for extension in extensions:
+                if f"*{extension}" in selected:
+                    selected_extension = extension
+                    break
+            self.export_displayed_result_path(path, preferred_extension=selected_extension)
 
-    def export_displayed_result_path(self, path: str | Path) -> bool:
-        asset = self._displayed_export_asset()
-        if asset is None:
-            self._show_save_error("No image result is available to export.")
+    def export_displayed_result_path(
+        self, path: str | Path, *, preferred_extension: str | None = None
+    ) -> bool:
+        target = self._current_export_target()
+        if target is None:
+            self._show_save_error("No displayed result is available to export.")
             return False
-        destination = Path(path)
-        if not destination.suffix:
-            destination = destination.with_suffix(".png")
         try:
-            self.document_controller.image_io.save(asset, destination)
+            destination = self.export_service.export(
+                target.artifact,
+                path,
+                render_source=target.render_source,
+                preferred_extension=preferred_extension,
+            )
         except (InputValidationError, ExportError) as error:
             self._show_save_error(str(error))
             return False
@@ -533,11 +562,32 @@ class MainWindow(QMainWindow):
         self.workbench_status_bar.showMessage("Displayed result exported.", 3000)
         return True
 
-    def _displayed_export_asset(self) -> ImageAsset | None:
+    def _current_export_target(self) -> DisplayedExportTarget | None:
+        target = self.operation_workspace.displayed_export_target()
+        if target is not None:
+            try:
+                self.export_service.default_extension(
+                    target.artifact, has_render_source=target.render_source is not None
+                )
+            except ExportError:
+                return None
+            return target
         result = self.operation_controller.active_result
-        if result is not None and isinstance(result.primary_artifact.data, ImageAsset):
-            return result.primary_artifact.data
-        return self.document_controller.current_image
+        if result is not None and result.primary_artifact.exportable:
+            try:
+                self.export_service.default_extension(result.primary_artifact)
+            except ExportError:
+                pass
+            else:
+                return DisplayedExportTarget(result.primary_artifact)
+        image = self.document_controller.current_image
+        if image is not None:
+            return DisplayedExportTarget(ImageArtifact("current_result", "Current Result", image))
+        return None
+
+    def activate_before_after_comparison(self) -> None:
+        if self.operation_workspace.activate_before_after_comparison():
+            self.show_operation_workspace()
 
     def undo_document(self) -> None:
         self._run_history_action(self.document_controller.undo)

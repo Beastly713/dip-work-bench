@@ -40,9 +40,11 @@ python -m dip_workbench
 dip-workbench
 ```
 
-These entry points configure the shared infrastructure and launch the C02 PySide6 desktop shell.
-The application context is released after the Qt event loop exits. C02 contains structural pages
-and panels only; image and operation workflows begin in later commits.
+These entry points configure the shared infrastructure and launch the PySide6 desktop workbench.
+The application context is released after the Qt event loop exits. The current implementation is
+complete through C12: primary-image workflow, utility transforms, M03-01 Image Negative, operation
+navigation, generated parameter controls, shared comparison views, analytical visualizations, and
+generic displayed-result export are available.
 
 C03 defines immutable canonical RGB, grayscale, binary, and label-map image assets plus separate
 floating intermediates. RGB is the sole internal three-channel order; BGR is confined to OpenCV
@@ -99,8 +101,18 @@ deduplicated. Auxiliary image inputs use operation-namespaced document state and
 errors inline without silent conversion or resizing. Standard parameter schemas generate typed
 controls with dynamic visibility/enabling, collapsed advanced settings, and kernel editing.
 Immediate and debounced policies can automatically refresh valid previews. Registry verification
-continues to require exactly M03-01. C12 introduces the general comparison, graph, table, matrix,
-and tree presentation system.
+continues to require exactly M03-01.
+
+C12 introduces the reusable comparison, graph, table, metrics, matrix, tree, and export layer.
+Comparison widgets support side-by-side, triple, equal-dimension split comparison, hold `B` to
+view Input, synchronized zoom and normalized pan, and panel maximization. PyQtGraph backs general
+graphs, histograms, transformation curves, and numeric matrix heatmaps. Data tables use Qt
+model/view sorting, filtering, and copy behavior. Displayed-result export is routed through one
+injected `ExportService`: images export as PNG, JPEG, BMP, or TIFF; graphs as PNG or CSV; tables
+and matrices as CSV; metrics, text, bitstreams, and trees as TXT. Raw label maps are deliberately
+rejected until a later explicit display mapping exists. No histogram operation, tree/compression
+operation, or additional academic operation is registered in C12. C13 begins overlays,
+interaction modes, the details drawer, and the seven final presenter templates.
 
 For headless GUI validation on Ubuntu, run:
 

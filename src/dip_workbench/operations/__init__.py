@@ -35,3 +35,4 @@ from dip_workbench.operations.registry import (
     operation_registry,
 )
 from dip_workbench.operations.results import ApplyCandidate, OperationResult
+from dip_workbench.operations.visualization import *

@@ -23,6 +23,7 @@ class FakeContext:
         self.logging = FakeLogging()
         self.settings = object()
         self.image_io = object()
+        self.export_service = object()
         self.image_transforms = object()
         self.document_store = object()
         self.operation_execution = object()
@@ -35,10 +36,13 @@ class FakeContext:
 class FakeWindow:
     shown = False
 
-    def __init__(self, settings: object, controller: object, execution: object) -> None:
+    def __init__(
+        self, settings: object, controller: object, execution: object, export_service: object
+    ) -> None:
         assert settings is not None
         assert controller is not None
         assert execution is not None
+        assert export_service is not None
 
     def show(self) -> None:
         type(self).shown = True
@@ -65,7 +69,10 @@ def test_window_failure_is_controlled_and_closes(monkeypatch, qapp) -> None:  # 
     context = FakeContext()
     messages: list[str] = []
 
-    def fail_window(settings: object, controller: object, execution: object) -> None:
+    def fail_window(
+        settings: object, controller: object, execution: object, export_service: object
+    ) -> None:
+        del settings, controller, execution, export_service
         raise RuntimeError("internal/path traceback detail")
 
     monkeypatch.setattr(application, "MainWindow", fail_window)

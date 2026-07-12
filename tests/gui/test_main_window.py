@@ -8,7 +8,12 @@ from PySide6.QtCore import QSettings
 
 from dip_workbench.controllers import DocumentController
 from dip_workbench.execution import OperationExecutionManager
-from dip_workbench.services import ImageIOService, ImageTransformService, SettingsService
+from dip_workbench.services import (
+    ExportService,
+    ImageIOService,
+    ImageTransformService,
+    SettingsService,
+)
 from dip_workbench.state import DocumentStore, HistorySnapshotStore
 from dip_workbench.ui.main_window import MainWindow, PageIndex
 
@@ -23,7 +28,9 @@ def make_window(qtbot, tmp_path) -> MainWindow:  # type: ignore[no-untyped-def]
         ImageTransformService(),
         DocumentStore(HistorySnapshotStore(history, image_io)),
     )
-    window = MainWindow(SettingsService(backend), controller, OperationExecutionManager())
+    window = MainWindow(
+        SettingsService(backend), controller, OperationExecutionManager(), ExportService(image_io)
+    )
     qtbot.addWidget(window)
     window.show()
     return window
@@ -58,7 +65,7 @@ def test_main_window_structure_and_navigation(qtbot, tmp_path) -> None:  # type:
         "Redo",
         "Reset Current Image",
         "",
-        "Compare",
+        "Before/After Comparison",
         "Add to Report",
         "Export Displayed Result",
         "",
@@ -114,6 +121,7 @@ def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ig
             DocumentStore(HistorySnapshotStore(history, image_io)),
         ),
         OperationExecutionManager(),
+        ExportService(image_io),
     )
     qtbot.addWidget(first)
     first.show()
@@ -132,6 +140,7 @@ def test_geometry_and_panel_widths_persist(qtbot, tmp_path) -> None:  # type: ig
             DocumentStore(HistorySnapshotStore(second_history, image_io)),
         ),
         OperationExecutionManager(),
+        ExportService(image_io),
     )
     qtbot.addWidget(second)
     second.show()
@@ -158,6 +167,7 @@ def test_corrupt_settings_fall_back_safely(qtbot, tmp_path) -> None:  # type: ig
             DocumentStore(HistorySnapshotStore(history, image_io)),
         ),
         OperationExecutionManager(),
+        ExportService(image_io),
     )
     qtbot.addWidget(window)
     assert window._navigation_width == 270

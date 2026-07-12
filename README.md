@@ -3,8 +3,10 @@
 DIP Workbench is an interactive desktop application for demonstrating, comparing, and
 documenting syllabus-based digital image-processing operations.
 
-The current implementation includes the C02 single-window desktop shell and the C03 canonical
-image and file-I/O foundation. Image operations and document state are not available yet.
+The current implementation is complete through C12. It includes the single-window PySide6 shell,
+canonical image/document state, utility transforms, the generic operation workspace, M03-01 Image
+Negative, operation navigation and parameter controls, and the shared comparison, graph, table,
+matrix, tree, metrics, and displayed-result export layer.
 
 ## Development setup
 
@@ -33,9 +35,8 @@ python -m dip_workbench
 dip-workbench
 ```
 
-Both commands launch the PySide6 desktop shell. The initial Home page and structural navigation,
-parameter, report-builder, and operation-workspace placeholders contain no image-processing
-behavior yet.
+Both commands launch the PySide6 desktop shell with the primary-image workflow, utility
+transforms, and the registered M03-01 Image Negative academic operation.
 
 ## Image foundation
 
@@ -113,6 +114,21 @@ including ranges, choices, lists, advanced settings, dynamic conditions, and edi
 Valid immediate or debounced changes can refresh Preview automatically. The registry remains at
 one academic operation, M03-01; C12 adds the general comparison and graph/table/matrix/tree result
 system.
+
+## Comparison, visualization, and export
+
+C12 adds reusable result-view infrastructure for future operations. Shared components now provide
+side-by-side comparison, triple comparison, equal-dimension split comparison, hold `B` to view
+Input, synchronized zoom and normalized pan, and in-workspace panel maximization. PyQtGraph backs
+general graphs, histograms, and transformation curves. Reusable widgets also cover data tables,
+metrics, matrix table/heatmap views, and hierarchical trees.
+
+Displayed-result export is now artifact-based through one injected `ExportService`. Supported
+exports are images as PNG, JPEG, BMP, or TIFF; graphs as PNG or CSV; tables and matrices as CSV;
+and metrics, text, bitstreams, and trees as TXT. Raw label maps still require a later explicit
+display mapping before image export. No histogram, tree-producing, compression, or additional
+academic operation is registered yet. The registry remains one academic operation. C13 will add
+overlays, interaction modes, the details drawer, and final presenter templates.
 
 ## Architecture principles
 

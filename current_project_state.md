@@ -17,15 +17,15 @@ Use this as the project root:
 
 Important history note: earlier work accidentally treated `/home/beastly713/ip-work` as the root. That was corrected. The actual Python package, tests, scripts, docs, and Git repository state for DIP Workbench live under `dip-work-bench`.
 
-Current branch and head before this handoff file was added:
+Current branch and head before the C12 working tree changes:
 
 ```text
 Branch: main
-HEAD: a2ada67 fix(ui): harden optional inputs and navigation state
+HEAD: e0caf55 docs: record current project state
 Remote tracking: origin/main
 ```
 
-The working tree was clean before creating this handoff file. After this file is added, it is expected to appear as an uncommitted new file unless someone commits it.
+The working tree now contains uncommitted C12 implementation changes. Do not stage, commit, push, create branches, amend history, or rewrite history unless the user explicitly asks.
 
 ## Product Contract
 
@@ -46,7 +46,7 @@ The implementation plan controls sequencing only. The master project specificati
 
 ## Current Commit-Plan Position
 
-The codebase has completed through C11 plus a C11 correction:
+The codebase has completed through C12:
 
 ```text
 C01  chore: scaffold repository and development infrastructure
@@ -63,15 +63,16 @@ C09  feat(ui): add the generic operation workspace
 C10  feat(m03): implement image negative end to end
 C11  feat(ui): add navigation search inputs and parameter controls
 C11 correction  fix(ui): harden optional inputs and navigation state
+C12  feat(ui): add comparison graph table matrix and tree views
 ```
 
-The next planned implementation commit is C12:
+The next planned implementation commit is C13:
 
 ```text
-feat(ui): add comparison graph table matrix and tree views
+feat(ui): add overlays interactions detail drawers and presenters
 ```
 
-Do not begin C13 or any later academic module work when implementing C12.
+Do not begin C14 or any later academic module work when implementing C13.
 
 ## Registry State
 
@@ -237,11 +238,24 @@ After C32: 67 academic tools
 - Entering utility mode clears academic active-operation styling without clearing recent operations.
 - Returning to M03-01 restores M03/M03-01 active indication.
 
+### C12 Comparison, Visualization, and Export
+
+- Shared PySide-free visualization contracts and adapters for graphs, histograms, tables, matrices, and trees.
+- PyQtGraph 0.14.0 dependency added for analytical graph and heatmap rendering.
+- Shared side-by-side comparison widget with permanent labels, synchronized zoom/pan, fit/100%/zoom controls, and panel maximization.
+- Triple comparison widget infrastructure for three semantic images.
+- Equal-dimension split comparison canvas with a genuine overlaid divider.
+- Before/After comparison widget with side-by-side default, split mode, and scoped hold `B` to view Input behavior.
+- M03-01 Image Negative now uses the shared comparison widget and shared transformation-curve graph.
+- Displayed export target contract added to operation presenters and `ResultWorkspaceHost`.
+- One injected `ExportService` owns artifact file writing.
+- Displayed-result export supports images, graphs, tables, matrices, metrics, text, bitstreams, and trees.
+- Raw label-map image export is rejected clearly until later explicit label-map display mapping exists.
+
 ## Not Yet Implemented
 
 The following major plan areas are still pending:
 
-- C12 comparison, graph, table, matrix, tree, CSV/TXT/PNG export infrastructure.
 - C13 overlays, interactive canvas modes, details drawer, and seven reusable presenter templates.
 - C14-C17 modules 1-4.
 - C18-C22 modules 5-8.
@@ -255,8 +269,7 @@ The following major plan areas are still pending:
 
 Specific features that must not be assumed complete:
 
-- Before/after comparison beyond the current M03-01 presenter.
-- General graph/table/matrix/tree views.
+- Additional operation-specific presenter templates beyond the C12 reusable widgets.
 - Overlays, markers, seed tools, brushes, block selection, or contour/keypoint inspection.
 - Report entry model or PDF export.
 - Presentation Mode.
@@ -293,6 +306,8 @@ tests/unit/test_document_store.py
 tests/unit/test_document_controller.py
 tests/unit/test_operation_controller.py
 tests/unit/operations/
+tests/unit/operations/test_visualization.py
+tests/unit/services/test_export_service.py
 tests/unit/execution/
 tests/gui/test_main_window.py
 tests/gui/test_primary_image_workflow.py
@@ -344,29 +359,43 @@ For offscreen launch checks, DBus/offscreen plugin warnings can appear. The impo
 
 ## Last Known Validation
 
-After the C11 correction, the project had the following known-good validation state:
+After C12, the project had the following known-good validation state:
 
 ```text
+python -m pip install -e ".[dev]"
+python -c "import pyqtgraph; print(pyqtgraph.__version__)"
 ruff format .
 ruff format --check .
 ruff check .
 mypy src
 python scripts/verify_registry.py
+pytest tests/unit/operations/test_visualization.py -q
+pytest tests/unit/services/test_export_service.py -q
+pytest tests/unit/test_application.py -q
+QT_QPA_PLATFORM=offscreen pytest tests/gui/test_image_negative_flow.py -q
+QT_QPA_PLATFORM=offscreen pytest tests/gui/test_main_window.py -q
 pytest -q
 QT_QPA_PLATFORM=offscreen pytest tests/gui -q
 python scripts/check.py
-QT_QPA_PLATFORM=offscreen python -m dip_workbench
+python scripts/verify_environment.py
+git diff --check
 ```
 
 Known results at that point:
 
 ```text
+PyQtGraph: 0.14.0
 Registry valid: 11 modules, 1 operation.
-Full pytest: 203 passed, 1 skipped.
-GUI suite: 41 passed.
+Full pytest: 218 passed, 1 skipped, 1 warning.
+GUI suite: 50 passed, 1 warning.
+ruff check: pass.
+mypy src: pass.
+python scripts/check.py: pass.
+python scripts/verify_environment.py: pass.
+git diff --check: pass.
 ```
 
-This handoff file itself does not require code-test reruns, but a future implementation commit should rerun the relevant packet-required validation.
+The offscreen launch smoke initialized without a traceback and was stopped with a 5 second timeout after the Qt event loop remained open. Only offscreen DBus/plugin warnings appeared.
 
 ## GitHub Action Status
 
@@ -383,27 +412,11 @@ git log --oneline --decorate -12
 python scripts/verify_registry.py
 ```
 
-Then read the next packet from the user. If the next packet is C12, keep the scope to:
-
-- export displayed result,
-- before/after comparison,
-- side-by-side, triple, split, and hold-to-view comparison,
-- synchronized zoom and pan,
-- panel maximization,
-- histogram/general graph widgets,
-- data table,
-- metrics cards,
-- matrix table and heatmap,
-- tree visualization,
-- CSV/TXT/graph PNG export.
-
-Do not implement C13 overlays, interaction modes, details drawer, or presenter templates during C12 unless the user provides a correction packet that explicitly changes scope.
+Then read the next packet from the user. If the next packet is C13, keep the scope to overlays, interaction modes, details drawer, and presenter templates. Do not implement new academic operations unless the packet explicitly moves into C14-C17.
 
 If making changes, do not stage, commit, push, create branches, amend commits, or rewrite history unless the user explicitly asks. The implementation packets usually ask for code changes only and a concise report.
 
 ## Notes and Small Inconsistencies
 
-- `README.md` contains detailed sections through C11, but its first short status paragraph still says the current implementation includes only C02 and C03 and that document state/image operations are unavailable. Treat that paragraph as stale compared with the later README sections and the actual codebase.
-- The project currently depends on NumPy, OpenCV headless, and PySide6. Later master-spec dependencies such as SciPy, scikit-image, scikit-learn, PyQtGraph, mahotas, and ReportLab are not yet all present in `pyproject.toml`.
+- The project currently depends on NumPy, OpenCV headless, PySide6, and PyQtGraph. Later master-spec dependencies such as SciPy, scikit-image, scikit-learn, mahotas, and ReportLab are not yet all present in `pyproject.toml`.
 - The production registry intentionally exposes only implemented academic operations. Showing all 11 module groups in the UI does not mean all 67 tools are registered.
-

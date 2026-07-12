@@ -9,6 +9,7 @@ from dip_workbench import application
 from dip_workbench.core import ColourModel, ImageAsset
 from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.services import (
+    ExportService,
     ImageIOService,
     ImageTransformService,
     LoggingService,
@@ -34,6 +35,7 @@ def test_build_context_uses_injected_resources(tmp_path) -> None:  # type: ignor
         assert isinstance(context.settings, SettingsService)
         assert isinstance(context.temporary_directories, TemporaryDirectoryManager)
         assert isinstance(context.image_io, ImageIOService)
+        assert isinstance(context.export_service, ExportService)
         assert isinstance(context.image_transforms, ImageTransformService)
         assert isinstance(context.document_store, DocumentStore)
         assert isinstance(context.operation_execution, OperationExecutionManager)

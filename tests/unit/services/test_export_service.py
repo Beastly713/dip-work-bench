@@ -1,0 +1,83 @@
+"""Tests for generic artifact export."""
+
+import numpy as np
+import pytest
+
+from dip_workbench.core import ColourModel, ExportError, ImageAsset
+from dip_workbench.operations import (
+    BitstreamArtifact,
+    CurveArtifact,
+    ImageArtifact,
+    LabelMapArtifact,
+    MatrixArtifact,
+    MetricGroupArtifact,
+    TableArtifact,
+    TextArtifact,
+    TreeArtifact,
+)
+from dip_workbench.services import ExportService, ImageIOService
+
+
+def asset(model: ColourModel = ColourModel.GRAY) -> ImageAsset:
+    data = np.full((4, 4), 255, dtype=np.uint8)
+    if model is ColourModel.RGB:
+        data = np.full((4, 4, 3), 100, dtype=np.uint8)
+    if model is ColourModel.BINARY:
+        data = np.array([[0, 255], [255, 0]], dtype=np.uint8)
+    if model is ColourModel.LABEL:
+        return ImageAsset("labels", np.ones((4, 4), dtype=np.int32), model)
+    return ImageAsset("image", data, model)
+
+
+def test_image_exports_and_label_rejection(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    service = ExportService(ImageIOService())
+    image_artifact = ImageArtifact("image", "Image", asset(ColourModel.RGB))
+    for suffix in (".png", ".jpg", ".bmp", ".tiff"):
+        destination = service.export(image_artifact, tmp_path / f"out{suffix}")
+        assert destination.exists() and destination.stat().st_size > 0
+    with pytest.raises(ExportError):
+        service.export(
+            LabelMapArtifact("labels", "Labels", asset(ColourModel.LABEL)),
+            tmp_path / "labels.png",
+        )
+    with pytest.raises(ExportError):
+        service.export(
+            ImageArtifact("hidden", "Hidden", asset(), exportable=False),
+            tmp_path / "hidden.png",
+        )
+
+
+def test_structured_exports(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    service = ExportService(ImageIOService())
+    service.export(
+        CurveArtifact("curve", "Curve", {"x": [0, 1], "y": [2, 3]}), tmp_path / "curve.csv"
+    )
+    assert (tmp_path / "curve.csv").read_text(encoding="utf-8").splitlines()[0] == "series,x,y"
+    service.export(
+        TableArtifact("table", "Table", [{"a": "x,y", "b": '"q"'}]), tmp_path / "table.csv"
+    )
+    assert '"x,y"' in (tmp_path / "table.csv").read_text(encoding="utf-8")
+    service.export(MatrixArtifact("matrix", "Matrix", [[1, 2], [3, 4]]), tmp_path / "matrix")
+    assert (tmp_path / "matrix.csv").exists()
+    service.export(MetricGroupArtifact("metrics", "Metrics", {"snr": 0}), tmp_path / "metrics.txt")
+    assert "snr: 0" in (tmp_path / "metrics.txt").read_text(encoding="utf-8")
+    service.export(TextArtifact("text", "Text", "hello"), tmp_path / "text.txt")
+    service.export(BitstreamArtifact("bits", "Bits", "0101"), tmp_path / "bits.txt")
+    service.export(
+        TreeArtifact(
+            "tree", "Tree", {"label": "root", "children": [{"label": "leaf", "value": 1}]}
+        ),
+        tmp_path / "tree.txt",
+    )
+    assert "  leaf: 1" in (tmp_path / "tree.txt").read_text(encoding="utf-8")
+
+
+def test_export_validation(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    service = ExportService(ImageIOService())
+    artifact = ImageArtifact("image", "Image", asset())
+    with pytest.raises(ExportError):
+        service.export(artifact, tmp_path / "missing" / "out.png")
+    with pytest.raises(ExportError):
+        service.export(artifact, tmp_path)
+    with pytest.raises(ExportError):
+        service.export(artifact, tmp_path / "out.gif")

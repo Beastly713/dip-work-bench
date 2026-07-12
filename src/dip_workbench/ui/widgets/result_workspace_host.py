@@ -1,5 +1,7 @@
 """State-driven generic operation result area."""
 
+from contextlib import suppress
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QLabel,
@@ -11,12 +13,17 @@ from PySide6.QtWidgets import (
 )
 
 from dip_workbench.controllers import OperationController, OperationWorkspaceState
+from dip_workbench.ui.widgets.operation_result_presenter import (
+    DisplayedExportTarget,
+    OperationResultPresenter,
+)
 
 
 class ResultWorkspaceHost(QWidget):
     cancel_requested = Signal()
     open_image_requested = Signal()
     correct_inputs_requested = Signal()
+    displayed_export_target_changed = Signal(object)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -25,6 +32,7 @@ class ResultWorkspaceHost(QWidget):
         self._pages = {}
         self._messages = {}
         self._result_widget: QWidget | None = None
+        self._presenter: OperationResultPresenter | None = None
         states = (
             (OperationWorkspaceState.NO_OPERATION, "No operation selected."),
             (OperationWorkspaceState.MISSING_INPUT, "Load or correct the required inputs."),
@@ -105,9 +113,34 @@ class ResultWorkspaceHost(QWidget):
 
     def set_result_widget(self, widget: QWidget | None) -> None:
         if self._result_widget is not None:
+            if self._presenter is not None:
+                self._presenter._set_displayed_export_target(None)
+                with suppress(RuntimeError, TypeError):
+                    self._presenter.displayed_export_target_changed.disconnect(
+                        self.displayed_export_target_changed
+                    )
             self.result_widget_host.removeWidget(self._result_widget)
             self._result_widget.setParent(None)
         self._result_widget = widget
+        self._presenter = widget if isinstance(widget, OperationResultPresenter) else None
         self.result_summary.setVisible(widget is None)
         if widget is not None:
             self.result_widget_host.addWidget(widget)
+        if self._presenter is not None:
+            self._presenter.displayed_export_target_changed.connect(
+                self.displayed_export_target_changed
+            )
+            self.displayed_export_target_changed.emit(self._presenter.displayed_export_target())
+        else:
+            self.displayed_export_target_changed.emit(None)
+
+    def displayed_export_target(self) -> DisplayedExportTarget | None:
+        if self._presenter is None:
+            return None
+        return self._presenter.displayed_export_target()
+
+    def supports_before_after_comparison(self) -> bool:
+        return self._presenter is not None and self._presenter.supports_before_after_comparison()
+
+    def activate_before_after_comparison(self) -> bool:
+        return self._presenter is not None and self._presenter.activate_before_after_comparison()

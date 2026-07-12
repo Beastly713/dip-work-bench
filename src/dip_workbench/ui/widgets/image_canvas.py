@@ -88,7 +88,7 @@ class ImageCanvas(QGraphicsView):
     def selected_region(self) -> RectangularRegion | None:
         return self._selected_region
 
-    def set_image(self, asset: ImageAsset) -> None:
+    def set_image(self, asset: ImageAsset, *, fit: bool = True) -> None:
         pixmap = QPixmap.fromImage(image_asset_to_qimage(asset))
         self._scene.clear()
         self._reset_interaction_state()
@@ -96,7 +96,8 @@ class ImageCanvas(QGraphicsView):
         self._pixmap_item.setPos(0, 0)
         self._scene.setSceneRect(0, 0, asset.width, asset.height)
         self._asset = asset
-        self.fit_to_view()
+        if fit:
+            self.fit_to_view()
 
     def clear_image(self) -> None:
         self._scene.clear()
