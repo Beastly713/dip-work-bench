@@ -1,5 +1,6 @@
 """Focused custom academic-operation interfaces."""
 
+from dip_workbench.ui.operations.advanced_edges import DoGEdgePresenter, LoGEdgePresenter
 from dip_workbench.ui.operations.common import (
     BeforeAfterImagePresenter,
     BeforeAfterImageWithCurvePresenter,
@@ -14,6 +15,7 @@ from dip_workbench.ui.operations.filters import (
     CustomConvolutionPresenter,
 )
 from dip_workbench.ui.operations.fundamentals import ChannelExtractionPresenter
+from dip_workbench.ui.operations.geometric_features import GeometricFeaturePresenter
 from dip_workbench.ui.operations.histograms import (
     HistogramAnalysisPresenter,
     HistogramEqualizationPresenter,
@@ -38,11 +40,14 @@ __all__ = [
     "CustomConvolutionPresenter",
     "DerivativeTriplePresenter",
     "DetailSharpeningPresenter",
+    "DoGEdgePresenter",
+    "GeometricFeaturePresenter",
     "HistogramAnalysisPresenter",
     "HistogramEqualizationPresenter",
     "ImageNegativeParameterEditor",
     "ImageNegativeResultPresenter",
     "LaplacianResponsePresenter",
     "LaplacianSharpeningPresenter",
+    "LoGEdgePresenter",
     "NoiseParameterEditor",
 ]

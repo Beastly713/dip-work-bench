@@ -10,7 +10,11 @@ from dip_workbench.operations import (
     LaplacianSharpeningExecutor,
     UnsharpMaskingExecutor,
 )
-from dip_workbench.operations.m06.common import gaussian_detail_components, laplacian_kernel
+from dip_workbench.operations.m06.common import (
+    clipped_uint8_plane,
+    gaussian_detail_components,
+    laplacian_kernel,
+)
 
 
 def context(image: ImageAsset, parameters: dict[str, object]) -> OperationContext:
@@ -93,3 +97,50 @@ def test_rgb_luminance_processing_preserves_shape_model_and_source() -> None:
     source_ycc = cv2.cvtColor(data, cv2.COLOR_RGB2YCrCb)
     output_ycc = cv2.cvtColor(output.data, cv2.COLOR_RGB2YCrCb)  # type: ignore[union-attr]
     np.testing.assert_array_equal(output_ycc[..., 1:], source_ycc[..., 1:])
+
+
+def test_rgb_laplacian_sharpening_metrics_use_luminance_plane_domain() -> None:
+    data = np.array(
+        [
+            [[10, 40, 90], [50, 90, 130], [210, 160, 100]],
+            [[30, 70, 110], [120, 170, 220], [240, 190, 140]],
+            [[80, 90, 100], [130, 140, 150], [180, 210, 240]],
+        ],
+        dtype=np.uint8,
+    )
+    image = ImageAsset("rgb", data, ColourModel.RGB)
+    result = LaplacianSharpeningExecutor().execute(
+        context(
+            image,
+            {
+                "neighbourhood": "four",
+                "strength": 1.25,
+                "colour_handling": "preserve_luminance_colour",
+            },
+        )
+    )
+    y_plane = cv2.cvtColor(data, cv2.COLOR_RGB2YCrCb)[..., 0].astype(np.float32)
+    response = cv2.filter2D(
+        y_plane, cv2.CV_32F, laplacian_kernel("four"), borderType=cv2.BORDER_REFLECT_101
+    )
+    expected = clipped_uint8_plane(y_plane - 1.25 * response)
+    assert result.metrics["Input Standard Deviation"] == float(np.std(y_plane))
+    assert result.metrics["Output Standard Deviation"] == float(np.std(expected))
+
+
+def test_rgb_gaussian_detail_metrics_use_luminance_plane_domain() -> None:
+    data = np.array(
+        [
+            [[20, 40, 80], [70, 100, 130], [180, 160, 120]],
+            [[40, 90, 130], [140, 180, 230], [240, 210, 160]],
+            [[90, 110, 120], [130, 150, 170], [190, 220, 250]],
+        ],
+        dtype=np.uint8,
+    )
+    image = ImageAsset("rgb", data, ColourModel.RGB)
+    result = UnsharpMaskingExecutor().execute(context(image, UNSHARP))
+    y_plane = cv2.cvtColor(data, cv2.COLOR_RGB2YCrCb)[..., 0].astype(np.float32)
+    _blur, detail = gaussian_detail_components(y_plane, kernel_size=3, sigma=0.0)
+    expected = clipped_uint8_plane(y_plane + 0.5 * detail)
+    assert result.metrics["Input Standard Deviation"] == float(np.std(y_plane))
+    assert result.metrics["Output Standard Deviation"] == float(np.std(expected))

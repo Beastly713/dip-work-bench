@@ -18,6 +18,7 @@ from dip_workbench.operations.definitions import (
 from dip_workbench.operations.identifiers import ModuleId, OperationId
 from dip_workbench.operations.inputs import InputSpec
 from dip_workbench.operations.m06.common import (
+    clipped_uint8_plane,
     gaussian_detail_components,
     luminance_working_plane,
     rebuild_from_luminance,
@@ -53,7 +54,9 @@ class HighBoostExecutor:
         plane, ycc, model = luminance_working_plane(image)
         context.cancellation_token.raise_if_cancelled()
         blur, detail = gaussian_detail_components(plane, kernel_size=ksize, sigma=float(sigma))
-        output = rebuild_from_luminance(plane + float(boost) * detail, ycc, model)
+        enhanced_plane = plane + float(boost) * detail
+        clipped_plane = clipped_uint8_plane(enhanced_plane)
+        output = rebuild_from_luminance(enhanced_plane, ycc, model)
         blurred = rebuild_from_luminance(blur, ycc, model)
         detail_display = signed_response_image(detail)
         context.cancellation_token.raise_if_cancelled()
@@ -111,7 +114,7 @@ class HighBoostExecutor:
                 "Detail Maximum": float(detail.max()),
                 "Detail Standard Deviation": float(np.std(detail)),
                 "Input Standard Deviation": float(np.std(plane)),
-                "Output Standard Deviation": float(np.std(output)),
+                "Output Standard Deviation": float(np.std(clipped_plane)),
             },
             metadata={"input_asset": image},
         )

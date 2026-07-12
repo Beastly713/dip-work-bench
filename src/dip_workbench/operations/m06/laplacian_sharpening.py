@@ -19,6 +19,7 @@ from dip_workbench.operations.definitions import (
 from dip_workbench.operations.identifiers import ModuleId, OperationId
 from dip_workbench.operations.inputs import InputSpec
 from dip_workbench.operations.m06.common import (
+    clipped_uint8_plane,
     laplacian_kernel,
     luminance_working_plane,
     rebuild_from_luminance,
@@ -74,6 +75,7 @@ class LaplacianSharpeningExecutor:
         kernel = laplacian_kernel(neighbourhood)
         laplacian = cv2.filter2D(plane, cv2.CV_32F, kernel, borderType=cv2.BORDER_REFLECT_101)
         sharpened_plane = plane - float(strength) * laplacian
+        clipped_plane = clipped_uint8_plane(sharpened_plane)
         output = rebuild_from_luminance(sharpened_plane, ycc, model)
         laplacian_display = signed_response_image(laplacian)
         context.cancellation_token.raise_if_cancelled()
@@ -116,7 +118,7 @@ class LaplacianSharpeningExecutor:
                 "Laplacian Minimum": float(laplacian_minimum := laplacian.min()),
                 "Laplacian Maximum": float(laplacian.max()),
                 "Input Standard Deviation": float(np.std(plane)),
-                "Output Standard Deviation": float(np.std(output)),
+                "Output Standard Deviation": float(np.std(clipped_plane)),
             },
             metadata={"input_asset": image, "laplacian_minimum": float(laplacian_minimum)},
         )
