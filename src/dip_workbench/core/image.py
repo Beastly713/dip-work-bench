@@ -18,7 +18,6 @@ class ColourModel(StrEnum):
     RGB = "RGB"
     GRAY = "GRAY"
     BINARY = "BINARY"
-    LABEL = "LABEL"
 
 
 def _immutable_metadata(metadata: Mapping[str, object]) -> Mapping[str, object]:
@@ -53,7 +52,6 @@ class ImageAsset:
             ColourModel.RGB: ((3, 3), np.dtype(np.uint8)),
             ColourModel.GRAY: ((2, 2), np.dtype(np.uint8)),
             ColourModel.BINARY: ((2, 2), np.dtype(np.uint8)),
-            ColourModel.LABEL: ((2, 2), np.dtype(np.int32)),
         }
         (minimum_dimensions, maximum_dimensions), expected_dtype = expected[self.colour_model]
         if not minimum_dimensions <= self.data.ndim <= maximum_dimensions:

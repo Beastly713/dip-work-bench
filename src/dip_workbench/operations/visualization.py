@@ -18,9 +18,7 @@ class VisualizationValidationError(InputValidationError):
 
 class GraphStyle(StrEnum):
     LINE = "line"
-    STEP = "step"
     BAR = "bar"
-    SCATTER = "scatter"
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,24 +101,6 @@ class MatrixData:
         object.__setattr__(self, "values", values)
         object.__setattr__(self, "row_labels", row_labels)
         object.__setattr__(self, "column_labels", column_labels)
-
-
-@dataclass(frozen=True, slots=True)
-class TreeNode:
-    label: str
-    value: object | None = None
-    children: tuple[TreeNode, ...] = ()
-
-    def __post_init__(self) -> None:
-        label = str(self.label)
-        if not label.strip():
-            raise VisualizationValidationError("Tree labels must be non-empty.")
-        children = tuple(
-            child if isinstance(child, TreeNode) else coerce_tree_data(child)
-            for child in self.children
-        )
-        object.__setattr__(self, "label", label)
-        object.__setattr__(self, "children", children)
 
 
 def _numeric_tuple(values: object, label: str) -> tuple[float, ...]:
@@ -235,41 +215,15 @@ def coerce_matrix_data(payload: object) -> MatrixData:
     raise VisualizationValidationError("Matrix payload is unsupported.")
 
 
-def coerce_tree_data(payload: object, *, _seen: set[int] | None = None) -> TreeNode:
-    if isinstance(payload, TreeNode):
-        return payload
-    if not isinstance(payload, Mapping):
-        raise VisualizationValidationError("Tree payload is unsupported.")
-    seen = set() if _seen is None else _seen
-    identity = id(payload)
-    if identity in seen:
-        raise VisualizationValidationError("Cyclic tree payloads are unsupported.")
-    seen.add(identity)
-    try:
-        label = payload["label"]
-    except KeyError as error:
-        raise VisualizationValidationError("Tree payload requires a label.") from error
-    child_payloads = payload.get("children", ())
-    if not isinstance(child_payloads, Sequence) or isinstance(
-        child_payloads, (str, bytes, bytearray)
-    ):
-        raise VisualizationValidationError("Tree children must be a sequence.")
-    children = tuple(coerce_tree_data(child, _seen=seen) for child in child_payloads)
-    seen.remove(identity)
-    return TreeNode(str(label), payload.get("value"), children)
-
-
 __all__ = [
     "GraphData",
     "GraphSeries",
     "GraphStyle",
     "MatrixData",
     "TableData",
-    "TreeNode",
     "VisualizationValidationError",
     "coerce_graph_data",
     "coerce_histogram_data",
     "coerce_matrix_data",
     "coerce_table_data",
-    "coerce_tree_data",
 ]

@@ -5,20 +5,29 @@ import pytest
 
 from dip_workbench.core import ColourModel, ExportError, ImageAsset
 from dip_workbench.operations import (
-    BitstreamArtifact,
+    CircleOverlay,
     CurveArtifact,
     GraphData,
     GraphSeries,
     HistogramArtifact,
     ImageArtifact,
-    LabelMapArtifact,
     MatrixArtifact,
     MetricGroupArtifact,
+    OverlayArtifact,
+    OverlayData,
     TableArtifact,
     TextArtifact,
-    TreeArtifact,
 )
 from dip_workbench.services import ExportService, ImageIOService
+
+
+class RenderSource:
+    def render_image(self, *, minimum_width: int = 1200, minimum_height: int = 800):
+        from PySide6.QtGui import QImage
+
+        image = QImage(minimum_width, minimum_height, QImage.Format.Format_RGB32)
+        image.fill(0xFFFFFFFF)
+        return image
 
 
 def asset(model: ColourModel = ColourModel.GRAY) -> ImageAsset:
@@ -27,22 +36,15 @@ def asset(model: ColourModel = ColourModel.GRAY) -> ImageAsset:
         data = np.full((4, 4, 3), 100, dtype=np.uint8)
     if model is ColourModel.BINARY:
         data = np.array([[0, 255], [255, 0]], dtype=np.uint8)
-    if model is ColourModel.LABEL:
-        return ImageAsset("labels", np.ones((4, 4), dtype=np.int32), model)
     return ImageAsset("image", data, model)
 
 
-def test_image_exports_and_label_rejection(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_image_exports_and_non_exportable_rejection(tmp_path) -> None:  # type: ignore[no-untyped-def]
     service = ExportService(ImageIOService())
     image_artifact = ImageArtifact("image", "Image", asset(ColourModel.RGB))
     for suffix in (".png", ".jpg", ".bmp", ".tiff"):
         destination = service.export(image_artifact, tmp_path / f"out{suffix}")
         assert destination.exists() and destination.stat().st_size > 0
-    with pytest.raises(ExportError):
-        service.export(
-            LabelMapArtifact("labels", "Labels", asset(ColourModel.LABEL)),
-            tmp_path / "labels.png",
-        )
     with pytest.raises(ExportError):
         service.export(
             ImageArtifact("hidden", "Hidden", asset(), exportable=False),
@@ -70,14 +72,6 @@ def test_structured_exports(tmp_path) -> None:  # type: ignore[no-untyped-def]
     service.export(MetricGroupArtifact("metrics", "Metrics", {"snr": 0}), tmp_path / "metrics.txt")
     assert "snr: 0" in (tmp_path / "metrics.txt").read_text(encoding="utf-8")
     service.export(TextArtifact("text", "Text", "hello"), tmp_path / "text.txt")
-    service.export(BitstreamArtifact("bits", "Bits", "0101"), tmp_path / "bits.txt")
-    service.export(
-        TreeArtifact(
-            "tree", "Tree", {"label": "root", "children": [{"label": "leaf", "value": 1}]}
-        ),
-        tmp_path / "tree.txt",
-    )
-    assert "  leaf: 1" in (tmp_path / "tree.txt").read_text(encoding="utf-8")
     curve_destination = service.export(
         CurveArtifact("curve2", "Curve 2", {"x": [0, 1], "y": [1, 0]}),
         tmp_path / "curve-preferred",
@@ -112,3 +106,12 @@ def test_histogram_csv_exports(tmp_path) -> None:  # type: ignore[no-untyped-def
         text = destination.read_text(encoding="utf-8")
         assert text.splitlines()[0] == "series,x,y"
         assert ",0.0," in text
+
+
+def test_overlay_png_requires_render_source(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    service = ExportService(ImageIOService())
+    artifact = OverlayArtifact("overlay", "Overlay", OverlayData((CircleOverlay(2, 2, 1),)))
+    with pytest.raises(ExportError):
+        service.export(artifact, tmp_path / "overlay.png")
+    destination = service.export(artifact, tmp_path / "overlay.png", render_source=RenderSource())
+    assert destination.exists() and destination.stat().st_size > 0

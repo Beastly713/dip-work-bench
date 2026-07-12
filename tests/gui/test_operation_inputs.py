@@ -1,4 +1,4 @@
-"""Tests for generic operation input summaries and auxiliary persistence."""
+"""Tests for generic operation input summaries."""
 
 import os
 
@@ -7,11 +7,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import numpy as np
 
 from dip_workbench.controllers import DocumentController, OperationController
-from dip_workbench.core import ColourModel, ImageAsset, RectangularRegion
+from dip_workbench.controllers.operation_controller import InputSource
+from dip_workbench.core import ColourModel, ImageAsset
 from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.operations import (
     ApplyPolicy,
-    InputRole,
     InputSpec,
     ModuleId,
     OperationDefinition,
@@ -30,36 +30,7 @@ def definition() -> OperationDefinition:
         ModuleId.M02,
         "Synthetic Inputs",
         "Test input summaries.",
-        (
-            InputSpec("image", "Image A", InputRole.PRIMARY_IMAGE),
-            InputSpec(
-                "reference",
-                "Image B",
-                InputRole.REFERENCE_IMAGE,
-                required=False,
-                accepted_colour_models=frozenset({ColourModel.RGB}),
-                same_dimensions_as="image",
-            ),
-            InputSpec(
-                "dataset",
-                "Dataset",
-                InputRole.DATASET,
-                required=False,
-                multiple=True,
-                minimum_count=2,
-                maximum_count=None,
-            ),
-            InputSpec(
-                "seeds", "Seed Points", InputRole.SEED_POINTS, required=False, minimum_count=0
-            ),
-            InputSpec(
-                "region",
-                "Region Selection",
-                InputRole.REGION_SELECTION,
-                required=False,
-                minimum_count=0,
-            ),
-        ),
+        (InputSpec("image", "Image A"),),
         (),
         PreviewPolicy.EXPLICIT,
         ApplyPolicy.NONE,
@@ -85,54 +56,16 @@ def make_controller(tmp_path):  # type: ignore[no-untyped-def]
     return controller, store
 
 
-def test_image_load_clear_restore_and_validation(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_single_image_source_summary_and_selection(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
     controller, store = make_controller(tmp_path)
     strip = OperationInputStrip()
     qtbot.addWidget(strip)
+    strip.source_changed.connect(controller.set_input_source)
     strip.refresh(controller)
-    assert "Not provided (Optional)" in strip.additional_summaries["reference"].text()
-    assert (
-        "Not provided (Optional; minimum 2 when provided)"
-        in strip.additional_summaries["dataset"].text()
-    )
-    reference = ImageAsset(
-        name="reference", data=np.zeros((4, 5, 3), dtype=np.uint8), colour_model=ColourModel.RGB
-    )
-    controller.set_additional_input("reference", reference)
+    assert "primary" in strip.summary.text()
+    assert strip.original_button.isChecked()
+    strip.current_button.click()
+    assert controller.input_source is InputSource.CURRENT
+    store.clear_active_preview()
     strip.refresh(controller)
-    assert "reference" in strip.additional_summaries["reference"].text()
-    controller.select_operation(definition())
-    assert controller.additional_inputs["reference"] is reference
-    bad = ImageAsset(
-        name="bad", data=np.zeros((4, 5), dtype=np.uint8), colour_model=ColourModel.GRAY
-    )
-    controller.set_additional_input("reference", bad)
-    assert "unsupported colour model" in controller.input_errors["reference"]
-    wrong_size = ImageAsset(
-        name="wrong",
-        data=np.zeros((3, 3, 3), dtype=np.uint8),
-        colour_model=ColourModel.RGB,
-    )
-    controller.set_additional_input("reference", wrong_size)
-    assert "matching dimensions" in controller.input_errors["reference"]
-    controller.clear_additional_input("reference")
-    assert "reference" not in controller.additional_inputs and not store.auxiliary_inputs
-
-
-def test_dataset_and_interactive_summaries(qtbot, tmp_path) -> None:  # type: ignore[no-untyped-def]
-    controller, _ = make_controller(tmp_path)
-    strip = OperationInputStrip()
-    qtbot.addWidget(strip)
-    images = tuple(
-        ImageAsset(
-            name=f"x{i}", data=np.zeros((4, 5, 3), dtype=np.uint8), colour_model=ColourModel.RGB
-        )
-        for i in range(2)
-    )
-    controller.set_additional_input("dataset", images)
-    controller.set_additional_input("seeds", ((1, 2), (3, 4), (5, 6)))
-    controller.set_additional_input("region", RectangularRegion(1, 2, 3, 2))
-    strip.refresh(controller)
-    assert "2 images" in strip.additional_summaries["dataset"].text()
-    assert "3 selected" in strip.additional_summaries["seeds"].text()
-    assert "x=1" in strip.additional_summaries["region"].text()
+    assert "primary" in strip.summary.text()

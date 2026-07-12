@@ -17,9 +17,8 @@ from dip_workbench.state import HistorySnapshotStore
 
 
 def make_asset(model: ColourModel, value: int = 10) -> ImageAsset:
-    dtype = np.int32 if model is ColourModel.LABEL else np.uint8
     shape = (2, 3, 3) if model is ColourModel.RGB else (2, 3)
-    data = np.full(shape, value, dtype=dtype)
+    data = np.full(shape, value, dtype=np.uint8)
     if model is ColourModel.BINARY:
         data.fill(255)
     return ImageAsset(name="state", data=data, colour_model=model, metadata={"tag": "kept"})
@@ -71,8 +70,6 @@ def test_missing_corrupt_foreign_and_unsupported_snapshots(tmp_path: Path) -> No
     foreign = replace(corrupt, snapshot_path=tmp_path.parent / "foreign.png")
     with pytest.raises(InputValidationError):
         store.delete(foreign)
-    with pytest.raises(InputValidationError):
-        create(store, make_asset(ColourModel.LABEL))
     with pytest.raises(InputValidationError):
         create(store, object())  # type: ignore[arg-type]
 

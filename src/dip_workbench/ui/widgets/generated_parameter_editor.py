@@ -9,13 +9,8 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
-    QFileDialog,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
-    QPushButton,
     QRadioButton,
     QSpinBox,
     QToolButton,
@@ -121,65 +116,27 @@ class GeneratedParameterEditor(OperationParameterEditor):
                 layout.addWidget(button)
             group.buttonClicked.connect(self._changed)
             return container
-        if kind in {ParameterType.INTEGER_RANGE, ParameterType.FLOAT_RANGE}:
+        if kind is ParameterType.INTEGER_RANGE:
             container = QWidget()
             layout = QHBoxLayout(container)
             boxes = []
             for _ in range(2):
-                if kind is ParameterType.INTEGER_RANGE:
-                    box = QSpinBox()
-                    box.setRange(
-                        int(spec.minimum if spec.minimum is not None else -1_000_000),
-                        int(spec.maximum if spec.maximum is not None else 1_000_000),
-                    )
-                    box.setSingleStep(int(spec.step or 1))
-                else:
-                    box = QDoubleSpinBox()
-                    box.setRange(
-                        float(spec.minimum if spec.minimum is not None else -1e9),
-                        float(spec.maximum if spec.maximum is not None else 1e9),
-                    )
-                    box.setSingleStep(float(spec.step or 0.1))
-                    box.setDecimals(6)
+                box = QSpinBox()
+                box.setRange(
+                    int(spec.minimum if spec.minimum is not None else -1_000_000),
+                    int(spec.maximum if spec.maximum is not None else 1_000_000),
+                )
+                box.setSingleStep(int(spec.step or 1))
                 box.valueChanged.connect(self._changed)
                 boxes.append(box)
                 layout.addWidget(box)
             container.range_boxes = boxes  # type: ignore[attr-defined]
             return container
-        if kind is ParameterType.MULTI_SELECT:
-            widget = QListWidget()
-            for choice in spec.choices:
-                item = QListWidgetItem(choice.label)
-                item.setData(Qt.ItemDataRole.UserRole, choice.value)
-                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-                item.setCheckState(Qt.CheckState.Unchecked)
-                widget.addItem(item)
-            widget.itemChanged.connect(self._changed)
-            return widget
         if kind is ParameterType.KERNEL:
             widget = KernelEditor(spec.default)
             widget.value_changed.connect(self._changed)
             return widget
-        if kind in {ParameterType.FILE, ParameterType.IMAGE}:
-            container = QWidget()
-            layout = QHBoxLayout(container)
-            editor = QLineEdit()
-            browse = QPushButton("Browse")
-            container.path_editor = editor  # type: ignore[attr-defined]
-            editor.editingFinished.connect(self._changed)
-            browse.clicked.connect(lambda: self._browse(editor))
-            layout.addWidget(editor)
-            layout.addWidget(browse)
-            return container
-        editor = QLineEdit()
-        editor.editingFinished.connect(self._changed)
-        return editor
-
-    def _browse(self, editor: QLineEdit) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Select File", editor.text())
-        if path:
-            editor.setText(path)
-            self._changed()
+        raise ValueError(f"Unsupported parameter type: {kind}.")
 
     def _changed(self, *args: object) -> None:
         if self._updating:
@@ -201,32 +158,11 @@ class GeneratedParameterEditor(OperationParameterEditor):
         if kind is ParameterType.RADIO:
             button = control.button_group.checkedButton()  # type: ignore[attr-defined]
             return button.property("choice_value") if button else None
-        if kind in {ParameterType.INTEGER_RANGE, ParameterType.FLOAT_RANGE}:
+        if kind is ParameterType.INTEGER_RANGE:
             return tuple(box.value() for box in control.range_boxes)  # type: ignore[attr-defined]
-        if isinstance(control, QListWidget):
-            return tuple(
-                control.item(i).data(Qt.ItemDataRole.UserRole)
-                for i in range(control.count())
-                if control.item(i).checkState() is Qt.CheckState.Checked
-            )
         if isinstance(control, KernelEditor):
             return control.value()
-        if kind in {ParameterType.FILE, ParameterType.IMAGE}:
-            return control.path_editor.text()  # type: ignore[attr-defined]
-        assert isinstance(control, QLineEdit)
-        text = control.text()
-        if kind is ParameterType.TEXT_LIST:
-            return tuple(item.strip() for item in text.split(",") if item.strip())
-        if kind is ParameterType.NUMERIC_LIST:
-            values: list[object] = []
-            for item in text.split(","):
-                try:
-                    number = float(item.strip())
-                    values.append(int(number) if number.is_integer() else number)
-                except ValueError:
-                    values.append(item.strip())
-            return tuple(values)
-        return text
+        raise ValueError(f"Unsupported parameter type: {kind}.")
 
     def set_values(self, values: Mapping[str, object]) -> None:
         self._updating = True
@@ -252,28 +188,13 @@ class GeneratedParameterEditor(OperationParameterEditor):
         if spec.parameter_type is ParameterType.RADIO:
             for button in control.button_group.buttons():  # type: ignore[attr-defined]
                 button.setChecked(button.property("choice_value") == value)
-        elif spec.parameter_type in {
-            ParameterType.INTEGER_RANGE,
-            ParameterType.FLOAT_RANGE,
-        } and isinstance(value, (tuple, list)):
+        elif spec.parameter_type is ParameterType.INTEGER_RANGE and isinstance(
+            value, (tuple, list)
+        ):
             for box, item in zip(control.range_boxes, value, strict=False):
                 box.setValue(item)  # type: ignore[attr-defined]
-        elif isinstance(control, QListWidget):
-            selected = set(value) if isinstance(value, (tuple, list, set, frozenset)) else set()
-            for i in range(control.count()):
-                control.item(i).setCheckState(
-                    Qt.CheckState.Checked
-                    if control.item(i).data(Qt.ItemDataRole.UserRole) in selected
-                    else Qt.CheckState.Unchecked
-                )
         elif isinstance(control, KernelEditor):
             control.set_value(value)
-        elif spec.parameter_type in {ParameterType.FILE, ParameterType.IMAGE}:
-            control.path_editor.setText(str(value))  # type: ignore[attr-defined]
-        elif isinstance(control, QLineEdit):
-            control.setText(
-                ", ".join(map(str, value)) if isinstance(value, (tuple, list)) else str(value)
-            )
 
     def _apply_conditions(self) -> None:
         for spec in self.schema:

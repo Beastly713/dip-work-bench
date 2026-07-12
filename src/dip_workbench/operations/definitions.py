@@ -25,12 +25,8 @@ class ApplyPolicy(StrEnum):
 
 class PresenterId(StrEnum):
     T1_SINGLE_IMAGE_TRANSFORMATION = "T1"
-    T2_DUAL_IMAGE_TRANSFORMATION = "T2"
     T3_ANALYSIS_AND_GRAPH = "T3"
     T4_OVERLAY_AND_FEATURE_DETECTION = "T4"
-    T5_INTERACTIVE_CANVAS = "T5"
-    T6_DATA_AND_COMPRESSION = "T6"
-    T7_DATASET_ANALYSIS = "T7"
 
 
 Factory = Callable[[], object]
@@ -52,9 +48,7 @@ class OperationDefinition:
     search_aliases: tuple[str, ...] = ()
     sample_id: str | None = None
     help_content: str = ""
-    custom_input_factory: Factory | None = None
     custom_parameter_factory: Factory | None = None
-    custom_presenter_factory: Factory | None = None
 
     def __post_init__(self) -> None:
         if self.id.module_id is not self.module_id:
@@ -65,14 +59,10 @@ class OperationDefinition:
             raise InputValidationError("Operation factories must be callable.")
         inputs = [item.key for item in self.input_spec]
         parameters = [item.key for item in self.parameter_schema]
+        if len(self.input_spec) != 1:
+            raise InputValidationError("Operation definitions require exactly one image input.")
         if len(inputs) != len(set(inputs)) or len(parameters) != len(set(parameters)):
             raise InputValidationError("Operation contract keys must be unique.")
-        for input_item in self.input_spec:
-            if input_item.same_dimensions_as is not None and (
-                input_item.same_dimensions_as not in inputs
-                or input_item.same_dimensions_as == input_item.key
-            ):
-                raise InputValidationError("Input dimension reference is invalid.")
         for parameter_item in self.parameter_schema:
             for condition in (parameter_item.visible_when, parameter_item.enabled_when):
                 if condition is not None and condition.parameter_key not in parameters:

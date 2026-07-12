@@ -24,17 +24,6 @@ def test_graph_styles_and_render(qtbot) -> None:  # type: ignore[no-untyped-def]
         assert non_background > 0
 
 
-def test_step_graph_uses_step_coordinates(qtbot) -> None:  # type: ignore[no-untyped-def]
-    widget = GraphWidget()
-    qtbot.addWidget(widget)
-    widget.set_graph_data(
-        GraphData((GraphSeries("step", (0, 1, 2), (3, 4, 5)),), style=GraphStyle.STEP)
-    )
-    item = widget.plot_items[0]
-    assert len(item.xData) == 5
-    assert list(item.yData) == [3.0, 3.0, 4.0, 4.0, 5.0]
-
-
 def test_histogram_and_negative_curve(qtbot) -> None:  # type: ignore[no-untyped-def]
     histogram = HistogramWidget()
     qtbot.addWidget(histogram)

@@ -11,9 +11,8 @@ from dip_workbench.state import ActivePreview, DocumentStore, HistorySnapshotSto
 
 
 def image(value: int, model: ColourModel = ColourModel.GRAY) -> ImageAsset:
-    dtype = np.int32 if model is ColourModel.LABEL else np.uint8
     shape = (3, 4, 3) if model is ColourModel.RGB else (3, 4)
-    data = np.full(shape, value, dtype=dtype)
+    data = np.full(shape, value, dtype=np.uint8)
     if model is ColourModel.BINARY:
         data.fill(255 if value else 0)
     return ImageAsset(name=f"image-{value}", data=data, colour_model=model)
@@ -41,7 +40,6 @@ def test_primary_is_independent_and_replacement_clears_state(tmp_path: Path) -> 
     assert store.current_image is not None
     assert store.current_image.id != original.id
     np.testing.assert_array_equal(store.current_image.data, original.data)
-    store.set_auxiliary_input("reference", image(2))
     store.set_operation_state("op", {"seed": 3})
     store.set_active_preview(ActivePreview("op", (), {}, {}, object(), 0))
     apply(store, 4)
@@ -50,7 +48,7 @@ def test_primary_is_independent_and_replacement_clears_state(tmp_path: Path) -> 
     store.set_primary_image(image(9))
     assert not store.history and not store.redo_history
     assert store.active_preview is None
-    assert not store.auxiliary_inputs and not store.operation_states
+    assert not store.operation_states
     assert not old_snapshot.exists()
 
 
@@ -129,21 +127,6 @@ def test_reset_is_applied_and_undoable(tmp_path: Path) -> None:
     assert int(store.undo().data[0, 0]) == 8
 
 
-def test_auxiliary_inputs_and_validation(tmp_path: Path) -> None:
-    store = make_store(tmp_path)
-    first, second = image(1), image(2)
-    store.set_auxiliary_input("secondary", first)
-    assert store.get_auxiliary_input("secondary") is first
-    store.set_auxiliary_input("dataset", (first, second))
-    assert store.get_auxiliary_input("dataset") == (first, second)
-    store.remove_auxiliary_input("secondary")
-    store.remove_auxiliary_input("missing")
-    with pytest.raises(InputValidationError):
-        store.set_auxiliary_input("dataset", ())
-    with pytest.raises(InputValidationError):
-        store.set_auxiliary_input("", first)
-
-
 def test_invalid_actions_and_clear_close(tmp_path: Path) -> None:
     store = make_store(tmp_path)
     with pytest.raises(InputValidationError):
@@ -153,8 +136,6 @@ def test_invalid_actions_and_clear_close(tmp_path: Path) -> None:
         store.undo()
     with pytest.raises(InputValidationError):
         store.redo()
-    with pytest.raises(InputValidationError):
-        store.apply_image(image(1, ColourModel.LABEL), operation_id="x", operation_name="x")
     apply(store, 2)
     path = store.history[0].snapshot_path
     store.clear_document()

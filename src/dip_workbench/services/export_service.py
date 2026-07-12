@@ -13,29 +13,25 @@ from PySide6.QtGui import QImage
 
 from dip_workbench.core import ColourModel, ExportError, ImageAsset
 from dip_workbench.operations import (
-    BitstreamArtifact,
     CurveArtifact,
     HistogramArtifact,
     ImageArtifact,
-    LabelMapArtifact,
     MaskArtifact,
     MatrixArtifact,
     MetricGroupArtifact,
+    OverlayArtifact,
     ResultArtifact,
     TableArtifact,
     TextArtifact,
-    TreeArtifact,
-    TreeNode,
     coerce_graph_data,
     coerce_histogram_data,
     coerce_matrix_data,
     coerce_table_data,
-    coerce_tree_data,
 )
 from dip_workbench.services.image_io_service import ImageIOService
 
 
-class GraphRenderSource(Protocol):
+class RenderSource(Protocol):
     def render_image(self, *, minimum_width: int = 1200, minimum_height: int = 800) -> QImage: ...
 
 
@@ -59,18 +55,14 @@ class ExportService:
                 return ()
             if data.colour_model is ColourModel.BINARY:
                 return (".png", ".bmp", ".tif", ".tiff")
-            if data.colour_model is ColourModel.LABEL:
-                return ()
             return self.IMAGE_EXTENSIONS
-        if isinstance(artifact, LabelMapArtifact):
-            return ()
         if isinstance(artifact, (HistogramArtifact, CurveArtifact)):
             return self.GRAPH_EXTENSIONS if has_render_source else (".csv",)
+        if isinstance(artifact, OverlayArtifact):
+            return (".png",) if has_render_source else ()
         if isinstance(artifact, (TableArtifact, MatrixArtifact)):
             return (".csv",)
-        if isinstance(
-            artifact, (MetricGroupArtifact, TextArtifact, BitstreamArtifact, TreeArtifact)
-        ):
+        if isinstance(artifact, (MetricGroupArtifact, TextArtifact)):
             return (".txt",)
         return ()
 
@@ -89,7 +81,7 @@ class ExportService:
         artifact: ResultArtifact,
         destination: str | Path,
         *,
-        render_source: GraphRenderSource | None = None,
+        render_source: RenderSource | None = None,
         preferred_extension: str | None = None,
     ) -> Path:
         if not artifact.exportable:
@@ -110,8 +102,6 @@ class ExportService:
             raise ExportError("Output parent directory does not exist.")
         if suffix not in self.supported_extensions(artifact, has_render_source=has_render_source):
             raise ExportError(f"Unsupported export extension for {artifact.label}: {suffix}.")
-        if isinstance(artifact, LabelMapArtifact):
-            raise ExportError("Raw label maps require an explicit display mapping before export.")
 
         def writer(path: Path) -> None:
             self._write_artifact(artifact, path, render_source=render_source)
@@ -124,21 +114,23 @@ class ExportService:
         artifact: ResultArtifact,
         destination: Path,
         *,
-        render_source: GraphRenderSource | None,
+        render_source: RenderSource | None,
     ) -> None:
         if isinstance(artifact, (ImageArtifact, MaskArtifact)):
             if not isinstance(artifact.data, ImageAsset):
                 raise ExportError("Image artifact does not contain an image.")
             self._image_io.save(artifact.data, destination)
             return
-        if isinstance(artifact, (HistogramArtifact, CurveArtifact)):
+        if isinstance(artifact, (HistogramArtifact, CurveArtifact, OverlayArtifact)):
             if destination.suffix.lower() == ".png":
                 if render_source is None:
-                    raise ExportError("Graph PNG export requires a current render source.")
+                    raise ExportError("PNG export requires a current render source.")
                 image = render_source.render_image()
                 if image.isNull() or not image.save(str(destination)):
-                    raise ExportError("Graph image could not be written.")
+                    raise ExportError("Rendered image could not be written.")
                 return
+            if isinstance(artifact, OverlayArtifact):
+                raise ExportError("Overlay artifacts export as PNG only.")
             self._write_graph_csv(artifact, destination)
             return
         if isinstance(artifact, TableArtifact):
@@ -161,17 +153,6 @@ class ExportService:
             return
         if isinstance(artifact, TextArtifact):
             self._write_text(destination, str(artifact.data))
-            return
-        if isinstance(artifact, BitstreamArtifact):
-            data = (
-                artifact.data.decode("utf-8")
-                if isinstance(artifact.data, bytes)
-                else str(artifact.data)
-            )
-            self._write_text(destination, data)
-            return
-        if isinstance(artifact, TreeArtifact):
-            self._write_text(destination, self._tree_text(coerce_tree_data(artifact.data)))
             return
         raise ExportError(f"{artifact.label} cannot be exported.")
 
@@ -231,10 +212,3 @@ class ExportService:
             suffix = f" {unit}" if unit else ""
             lines.append(f"{key}: {value}{suffix}")
         return "\n".join(lines)
-
-    def _tree_text(self, node: TreeNode, *, depth: int = 0) -> str:
-        label = f"{'  ' * depth}{node.label}"
-        if node.value is not None:
-            label = f"{label}: {node.value}"
-        children = [self._tree_text(child, depth=depth + 1) for child in node.children]
-        return "\n".join([label, *children])

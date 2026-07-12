@@ -2,7 +2,9 @@ import pytest
 
 from dip_workbench.core import InputValidationError
 from dip_workbench.operations import (
+    MODULE_NAMES,
     ApplyPolicy,
+    InputSpec,
     ModuleId,
     OperationDefinition,
     OperationId,
@@ -22,7 +24,7 @@ def definition(
         ModuleId(value[:3]),
         name,
         "Short description",
-        (),
+        (InputSpec("image", "Image"),),
         (),
         PreviewPolicy.NONE,
         ApplyPolicy.NONE,
@@ -76,3 +78,22 @@ def test_registry_and_definition_validation() -> None:
             lambda: None,
         )
     assert tuple(str(item.id) for item in operation_registry.all()) == ("M03-01",)
+
+
+def test_reduced_scope_contract() -> None:
+    assert len(tuple(ModuleId)) == 10
+    assert [MODULE_NAMES[module] for module in ModuleId] == [
+        "Image Fundamentals",
+        "Basic Adjustments",
+        "Intensity Transformations",
+        "Histogram Processing",
+        "Blur, Filtering and Convolution",
+        "Sharpening and Edge Enhancement",
+        "Frequency-Domain Processing",
+        "Noise Simulation",
+        "Basic Segmentation",
+        "Edge and Geometric Feature Detection",
+    ]
+    with pytest.raises(InputValidationError):
+        OperationId("M11-01")
+    assert operation_registry.get("M03-01").display_name == "Image Negative"

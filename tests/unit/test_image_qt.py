@@ -32,10 +32,5 @@ def test_single_channel_display(model: ColourModel) -> None:
 
 
 def test_unsupported_values_are_rejected() -> None:
-    label = ImageAsset(
-        name="label", data=np.zeros((2, 2), dtype=np.int32), colour_model=ColourModel.LABEL
-    )
-    with pytest.raises(InputValidationError):
-        image_asset_to_qimage(label)
     with pytest.raises(InputValidationError):
         image_asset_to_qimage(object())  # type: ignore[arg-type]

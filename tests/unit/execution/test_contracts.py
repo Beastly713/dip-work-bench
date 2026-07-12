@@ -14,6 +14,7 @@ from dip_workbench.execution import (
 from dip_workbench.operations import (
     ApplyPolicy,
     ImageArtifact,
+    InputSpec,
     ModuleId,
     OperationDefinition,
     OperationId,
@@ -29,7 +30,7 @@ def definition() -> OperationDefinition:
         ModuleId.M01,
         "Demo",
         "Description",
-        (),
+        (InputSpec("image", "Image"),),
         (),
         PreviewPolicy.NONE,
         ApplyPolicy.NONE,

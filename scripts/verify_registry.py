@@ -6,8 +6,8 @@ from dip_workbench.operations import ModuleId, OperationRegistryError, operation
 def main() -> int:
     try:
         report = operation_registry.verify(("M03-01",))
-        if len(ModuleId) != 11:
-            raise OperationRegistryError("Expected exactly eleven modules.")
+        if len(ModuleId) != 10:
+            raise OperationRegistryError("Expected exactly ten modules.")
         if report.operation_count != 1:
             raise OperationRegistryError("Expected exactly one production operation.")
     except OperationRegistryError as error:

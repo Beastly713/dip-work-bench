@@ -6,20 +6,17 @@ from dip_workbench.execution import PreviewInputReducer, PreviewResolutionPolicy
 
 
 def asset(model: ColourModel, width: int = 2000, height: int = 1000) -> ImageAsset:
-    dtype = np.int32 if model is ColourModel.LABEL else np.uint8
     data = (
-        np.zeros((height, width, 3), dtype=dtype)
+        np.zeros((height, width, 3), dtype=np.uint8)
         if model is ColourModel.RGB
-        else np.zeros((height, width), dtype=dtype)
+        else np.zeros((height, width), dtype=np.uint8)
     )
     if model is ColourModel.BINARY:
         data[:, ::2] = 255
     return ImageAsset(name="x", data=data, colour_model=model)
 
 
-@pytest.mark.parametrize(
-    "model", [ColourModel.RGB, ColourModel.GRAY, ColourModel.BINARY, ColourModel.LABEL]
-)
+@pytest.mark.parametrize("model", [ColourModel.RGB, ColourModel.GRAY, ColourModel.BINARY])
 def test_reduce_models_aspect_metadata_and_source_immutability(model: ColourModel) -> None:
     source = asset(model)
     reduced = PreviewInputReducer(PreviewResolutionPolicy(maximum_dimension=100)).reduce_inputs(
@@ -32,8 +29,6 @@ def test_reduce_models_aspect_metadata_and_source_immutability(model: ColourMode
     )
     if model is ColourModel.BINARY:
         assert set(np.unique(reduced.data)) <= {0, 255}
-    if model is ColourModel.LABEL:
-        assert reduced.dtype == np.int32
     assert source.shape[:2] == (1000, 2000)
 
 

@@ -58,8 +58,6 @@ class PreviewInputReducer:
             else cv2.INTER_NEAREST
         )
         data = cv2.resize(asset.data, (width, height), interpolation=interpolation)
-        if asset.colour_model is ColourModel.LABEL:
-            data = data.astype(np.int32, copy=False)
         metadata = dict(asset.metadata)
         metadata.update(
             {

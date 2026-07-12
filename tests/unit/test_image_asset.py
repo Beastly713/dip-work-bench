@@ -12,7 +12,6 @@ from dip_workbench.core import ColourModel, FloatingImage, ImageAsset, InputVali
         (ColourModel.RGB, np.zeros((3, 4, 3), dtype=np.uint8), 3, 8),
         (ColourModel.GRAY, np.zeros((3, 4), dtype=np.uint8), 1, 8),
         (ColourModel.BINARY, np.array([[0, 255]], dtype=np.uint8), 1, 8),
-        (ColourModel.LABEL, np.zeros((3, 4), dtype=np.int32), 1, 32),
     ],
 )
 def test_valid_assets_and_properties(
@@ -43,7 +42,6 @@ def test_valid_floating_image(dtype: np.dtype) -> None:
         (ColourModel.RGB, np.zeros((2, 2, 3), dtype=np.float32)),
         (ColourModel.GRAY, np.zeros((2, 2, 1), dtype=np.uint8)),
         (ColourModel.BINARY, np.array([[0, 1]], dtype=np.uint8)),
-        (ColourModel.LABEL, np.zeros((2, 2), dtype=np.uint8)),
         (ColourModel.GRAY, np.zeros((0, 2), dtype=np.uint8)),
     ],
 )

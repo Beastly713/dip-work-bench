@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "dip-workbench"
 version = "0.1.0"
 description = "Interactive desktop workbench for demonstrating digital image processing operations."
-readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "numpy==2.4.6",

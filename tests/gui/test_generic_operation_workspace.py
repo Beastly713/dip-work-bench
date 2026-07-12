@@ -12,7 +12,6 @@ from dip_workbench.core import ColourModel, ImageAsset
 from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.operations import (
     ApplyPolicy,
-    InputRole,
     InputSpec,
     ModuleId,
     OperationDefinition,
@@ -34,7 +33,7 @@ def definition(*, apply_policy=ApplyPolicy.PRIMARY_ARTIFACT):
         ModuleId.M03,
         "Synthetic",
         "Test the generic workspace.",
-        (InputSpec("image", "Image", InputRole.PRIMARY_IMAGE),),
+        (InputSpec("image", "Image"),),
         (ParameterSpec("amount", "Amount", ParameterType.INTEGER, 2),),
         PreviewPolicy.IMMEDIATE,
         apply_policy,

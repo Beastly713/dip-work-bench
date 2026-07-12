@@ -34,16 +34,6 @@ def schema() -> tuple[ParameterSpec, ...]:
             choices=(ParameterChoice(1, "One"), ParameterChoice(2, "Two")),
         ),
         ParameterSpec("integer_range", "Integer range", ParameterType.INTEGER_RANGE, (1, 3)),
-        ParameterSpec("float_range", "Float range", ParameterType.FLOAT_RANGE, (0.1, 0.9)),
-        ParameterSpec(
-            "selected",
-            "Selected",
-            ParameterType.MULTI_SELECT,
-            ("x",),
-            choices=(ParameterChoice("x", "X"), ParameterChoice("y", "Y")),
-        ),
-        ParameterSpec("names", "Names", ParameterType.TEXT_LIST, ("one",)),
-        ParameterSpec("numbers", "Numbers", ParameterType.NUMERIC_LIST, (1, 2.5)),
         ParameterSpec("kernel", "Kernel", ParameterType.KERNEL, ((1, 0), (0, 1)), advanced=True),
         ParameterSpec(
             "conditional",

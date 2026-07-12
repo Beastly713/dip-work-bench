@@ -1,4 +1,4 @@
-"""Typed heterogeneous operation result artifacts."""
+"""Typed operation result artifacts for the reduced plan."""
 
 import re
 from collections.abc import Mapping
@@ -13,30 +13,22 @@ from dip_workbench.core import ColourModel, FloatingImage, ImageAsset, InputVali
 
 __all__ = [
     "ArtifactType",
-    "BitstreamArtifact",
-    "ContourSetArtifact",
     "CurveArtifact",
-    "DatasetComponentsArtifact",
     "HistogramArtifact",
     "ImageArtifact",
-    "KeypointSetArtifact",
-    "LabelMapArtifact",
     "MaskArtifact",
-    "MatchSetArtifact",
     "MatrixArtifact",
     "MetricGroupArtifact",
     "OverlayArtifact",
     "ResultArtifact",
     "TableArtifact",
     "TextArtifact",
-    "TreeArtifact",
 ]
 
 
 class ArtifactType(StrEnum):
     IMAGE = "image"
     MASK = "mask"
-    LABEL_MAP = "label_map"
     OVERLAY = "overlay"
     HISTOGRAM = "histogram"
     CURVE = "curve"
@@ -44,12 +36,6 @@ class ArtifactType(StrEnum):
     TABLE = "table"
     METRIC_GROUP = "metric_group"
     TEXT = "text"
-    TREE = "tree"
-    BITSTREAM = "bitstream"
-    CONTOUR_SET = "contour_set"
-    KEYPOINT_SET = "keypoint_set"
-    MATCH_SET = "match_set"
-    DATASET_COMPONENTS = "dataset_components"
 
 
 def _freeze(value: object) -> object:
@@ -99,10 +85,6 @@ class MaskArtifact(ResultArtifact):
     ARTIFACT_TYPE = ArtifactType.MASK
 
 
-class LabelMapArtifact(ResultArtifact):
-    ARTIFACT_TYPE = ArtifactType.LABEL_MAP
-
-
 class OverlayArtifact(ResultArtifact):
     ARTIFACT_TYPE = ArtifactType.OVERLAY
 
@@ -131,45 +113,19 @@ class TextArtifact(ResultArtifact):
     ARTIFACT_TYPE = ArtifactType.TEXT
 
 
-class TreeArtifact(ResultArtifact):
-    ARTIFACT_TYPE = ArtifactType.TREE
-
-
-class BitstreamArtifact(ResultArtifact):
-    ARTIFACT_TYPE = ArtifactType.BITSTREAM
-
-
-class ContourSetArtifact(ResultArtifact):
-    ARTIFACT_TYPE = ArtifactType.CONTOUR_SET
-
-
-class KeypointSetArtifact(ResultArtifact):
-    ARTIFACT_TYPE = ArtifactType.KEYPOINT_SET
-
-
-class MatchSetArtifact(ResultArtifact):
-    ARTIFACT_TYPE = ArtifactType.MATCH_SET
-
-
-class DatasetComponentsArtifact(ResultArtifact):
-    ARTIFACT_TYPE = ArtifactType.DATASET_COMPONENTS
-
-
 def _specialized_validation(self: ResultArtifact) -> None:
+    from dip_workbench.operations.overlays import OverlayData
+
     if isinstance(self, ImageArtifact) and not isinstance(self.data, (ImageAsset, FloatingImage)):
         raise InputValidationError("Image artifact requires image data.")
     if isinstance(self, MaskArtifact) and (
         not isinstance(self.data, ImageAsset) or self.data.colour_model is not ColourModel.BINARY
     ):
         raise InputValidationError("Mask artifact requires a binary image.")
-    if isinstance(self, LabelMapArtifact) and (
-        not isinstance(self.data, ImageAsset) or self.data.colour_model is not ColourModel.LABEL
-    ):
-        raise InputValidationError("Label artifact requires a label map.")
+    if isinstance(self, OverlayArtifact) and not isinstance(self.data, OverlayData):
+        raise InputValidationError("Overlay artifact requires overlay data.")
     if isinstance(self, TextArtifact) and not isinstance(self.data, str):
         raise InputValidationError("Text artifact requires text.")
-    if isinstance(self, BitstreamArtifact) and not isinstance(self.data, (bytes, str)):
-        raise InputValidationError("Bitstream artifact requires bytes or text.")
 
 
 _base_post = ResultArtifact.__post_init__

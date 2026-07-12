@@ -24,9 +24,9 @@ from dip_workbench.ui.widgets.operation_result_presenter import (
     DisplayedExportTarget,
     OperationResultPresenter,
 )
+from dip_workbench.ui.widgets.overlay_viewer import OverlayCanvas, OverlayViewer
 from dip_workbench.ui.widgets.parameter_controls import KernelEditor
 from dip_workbench.ui.widgets.result_workspace_host import ResultWorkspaceHost
-from dip_workbench.ui.widgets.tree_viewer import TreeViewer
 from dip_workbench.ui.widgets.view_transform_controller import ViewTransformController
 
 __all__ = [
@@ -46,11 +46,12 @@ __all__ = [
     "OperationHeader",
     "OperationInputStrip",
     "OperationResultPresenter",
+    "OverlayCanvas",
+    "OverlayViewer",
     "ResultWorkspaceHost",
     "SideBySideComparisonWidget",
     "SplitComparisonCanvas",
     "TransformationCurveWidget",
-    "TreeViewer",
     "TripleComparisonWidget",
     "ViewTransformController",
 ]

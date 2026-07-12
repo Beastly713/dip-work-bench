@@ -20,22 +20,20 @@ class ModuleId(StrEnum):
     M08 = "M08"
     M09 = "M09"
     M10 = "M10"
-    M11 = "M11"
 
 
 MODULE_NAMES: Mapping[ModuleId, str] = MappingProxyType(
     {
-        ModuleId.M01: "Image Fundamentals and Representation",
-        ModuleId.M02: "Arithmetic and Logical Operations",
+        ModuleId.M01: "Image Fundamentals",
+        ModuleId.M02: "Basic Adjustments",
         ModuleId.M03: "Intensity Transformations",
         ModuleId.M04: "Histogram Processing",
-        ModuleId.M05: "Spatial Filtering and Convolution",
+        ModuleId.M05: "Blur, Filtering and Convolution",
         ModuleId.M06: "Sharpening and Edge Enhancement",
         ModuleId.M07: "Frequency-Domain Processing",
-        ModuleId.M08: "Noise Simulation and Restoration",
-        ModuleId.M09: "Image Segmentation",
-        ModuleId.M10: "Feature Extraction and Shape Analysis",
-        ModuleId.M11: "Compression and Quality Analysis",
+        ModuleId.M08: "Noise Simulation",
+        ModuleId.M09: "Basic Segmentation",
+        ModuleId.M10: "Edge and Geometric Feature Detection",
     }
 )
 
@@ -47,9 +45,9 @@ class OperationId:
     def __post_init__(self) -> None:
         if (
             not isinstance(self.value, str)
-            or re.fullmatch(r"M(?:0[1-9]|1[01])-(?:0[1-9]|[1-9][0-9])", self.value) is None
+            or re.fullmatch(r"M(?:0[1-9]|10)-(?:0[1-9]|[1-9][0-9])", self.value) is None
         ):
-            raise InputValidationError("Operation ID must use the format M01-01 through M11-99.")
+            raise InputValidationError("Operation ID must use the format M01-01 through M10-99.")
 
     @property
     def module_id(self) -> ModuleId:

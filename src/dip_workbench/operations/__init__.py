@@ -14,11 +14,12 @@ from dip_workbench.operations.identifiers import (
     OperationId,
     parse_operation_id,
 )
-from dip_workbench.operations.inputs import InputRole, InputSpec
+from dip_workbench.operations.inputs import InputSpec
 from dip_workbench.operations.m03.image_negative import (
     IMAGE_NEGATIVE_DEFINITION,
     ImageNegativeExecutor,
 )
+from dip_workbench.operations.overlays import *
 from dip_workbench.operations.parameters import (
     ConditionOperator,
     ParameterChoice,

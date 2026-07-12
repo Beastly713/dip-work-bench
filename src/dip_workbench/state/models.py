@@ -5,12 +5,9 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from types import MappingProxyType
-from typing import TypeAlias
 from uuid import uuid4
 
-from dip_workbench.core import ColourModel, ImageAsset, InputValidationError
-
-AuxiliaryInput: TypeAlias = ImageAsset | tuple[ImageAsset, ...]
+from dip_workbench.core import ColourModel, InputValidationError
 
 
 def _mapping(value: Mapping[str, object]) -> Mapping[str, object]:

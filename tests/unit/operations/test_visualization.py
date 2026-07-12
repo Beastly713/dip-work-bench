@@ -8,13 +8,11 @@ from dip_workbench.operations import (
     GraphSeries,
     MatrixData,
     TableData,
-    TreeNode,
     VisualizationValidationError,
     coerce_graph_data,
     coerce_histogram_data,
     coerce_matrix_data,
     coerce_table_data,
-    coerce_tree_data,
 )
 
 
@@ -31,7 +29,7 @@ def test_valid_graph_and_validation_errors() -> None:
         GraphSeries("bad", (True,), (1,))
 
 
-def test_table_matrix_and_tree_contracts() -> None:
+def test_table_and_matrix_contracts() -> None:
     assert TableData(("a",), ((1,),)).rows == ((1,),)
     with pytest.raises(VisualizationValidationError):
         TableData(("a",), ((1, 2),))
@@ -42,9 +40,6 @@ def test_table_matrix_and_tree_contracts() -> None:
         MatrixData(((1,), (1, 2)))
     with pytest.raises(VisualizationValidationError):
         MatrixData(((1,),), column_labels=("a", "b"))
-    assert TreeNode("root", children=(TreeNode("leaf"),)).children[0].label == "leaf"
-    with pytest.raises(VisualizationValidationError):
-        TreeNode("")
 
 
 def test_compatibility_adapters() -> None:
@@ -59,9 +54,3 @@ def test_compatibility_adapters() -> None:
     assert coerce_matrix_data(np.eye(2)).values == ((1.0, 0.0), (0.0, 1.0))
     with pytest.raises(VisualizationValidationError):
         coerce_matrix_data([[1, 2], 3])
-    child: dict[str, object] = {"label": "child"}
-    root: dict[str, object] = {"label": "root", "children": [child]}
-    assert coerce_tree_data(root).children[0].label == "child"
-    child["children"] = [root]
-    with pytest.raises(VisualizationValidationError):
-        coerce_tree_data(root)

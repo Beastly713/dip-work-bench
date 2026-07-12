@@ -1,6 +1,6 @@
-"""GUI tests for table, metrics, matrix, and tree views."""
+"""GUI tests for table, metrics, and matrix views."""
 
-from dip_workbench.ui.widgets import DataTableWidget, MatrixViewer, MetricsPanel, TreeViewer
+from dip_workbench.ui.widgets import DataTableWidget, MatrixViewer, MetricsPanel
 
 
 def test_data_table_filter_and_copy(qtbot) -> None:  # type: ignore[no-untyped-def]
@@ -15,7 +15,7 @@ def test_data_table_filter_and_copy(qtbot) -> None:  # type: ignore[no-untyped-d
     assert "Unsupported table data" in widget.message.text()
 
 
-def test_metrics_matrix_and_tree_views(qtbot) -> None:  # type: ignore[no-untyped-def]
+def test_metrics_and_matrix_views(qtbot) -> None:  # type: ignore[no-untyped-def]
     metrics = MetricsPanel()
     qtbot.addWidget(metrics)
     metrics.set_metrics(
@@ -33,14 +33,3 @@ def test_metrics_matrix_and_tree_views(qtbot) -> None:  # type: ignore[no-untype
     matrix.set_matrix_data([[1, 2], 3])
     assert matrix.matrix_data() is None
     assert "Unsupported matrix data" in matrix.heat_message.text()
-
-    tree = TreeViewer()
-    qtbot.addWidget(tree)
-    tree.set_tree_data({"label": "root", "children": [{"label": "leaf", "value": 1}]})
-    tree.tree.expandAll()
-    assert tree.tree.topLevelItem(0).child(0).text(1) == "1"
-    root: dict[str, object] = {"label": "root"}
-    root["children"] = [root]
-    tree.set_tree_data(root)
-    assert tree.tree_data() is None
-    assert "Unsupported tree data" in tree.tree.topLevelItem(0).text(0)

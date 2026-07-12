@@ -21,7 +21,6 @@ from dip_workbench.execution import (
 from dip_workbench.operations import (
     ApplyPolicy,
     ImageArtifact,
-    InputRole,
     InputSpec,
     ModuleId,
     OperationDefinition,
@@ -99,7 +98,7 @@ def definition(
         ModuleId.M03,
         "Synthetic",
         "Test the generic workspace.",
-        (InputSpec("image", "Image", InputRole.PRIMARY_IMAGE, allow_original=allow_original),),
+        (InputSpec("image", "Image", allow_original=allow_original),),
         (ParameterSpec("amount", "Amount", ParameterType.INTEGER, 2, minimum=1),),
         preview_policy,
         apply_policy,
@@ -221,15 +220,15 @@ def test_policy_driven_parameter_preview(tmp_path) -> None:
     assert explicit_manager.request is None
 
 
-def test_optional_input_count_semantics(tmp_path) -> None:
+def test_single_input_contract_and_source_validation(tmp_path) -> None:
     item, _, _ = controller(tmp_path)
 
     def with_input(spec: InputSpec, value: str) -> OperationDefinition:
         return OperationDefinition(
             OperationId(value),
             ModuleId.M03,
-            "Optional Inputs",
-            "Validate optional input counts.",
+            "Single Input",
+            "Validate single image input.",
             (spec,),
             (),
             PreviewPolicy.EXPLICIT,
@@ -239,29 +238,20 @@ def test_optional_input_count_semantics(tmp_path) -> None:
             lambda: object(),
         )
 
-    item.select_operation(
-        with_input(
-            InputSpec("reference", "Reference Image", InputRole.REFERENCE_IMAGE, required=False),
-            "M03-02",
-        )
-    )
+    item.select_operation(with_input(InputSpec("image", "Image"), "M03-02"))
     assert not item.input_errors
-    optional_multiple = InputSpec(
-        "dataset",
-        "Dataset",
-        InputRole.DATASET,
-        required=False,
-        multiple=True,
-        minimum_count=2,
-        maximum_count=None,
+
+    current_only = with_input(
+        InputSpec("image", "Image", allow_original=False, allow_current=True),
+        "M03-03",
     )
-    item.select_operation(with_input(optional_multiple, "M03-03"))
+    item.select_operation(current_only)
+    assert item.input_source is InputSource.CURRENT
     assert not item.input_errors
-    item.set_additional_input("dataset", (object(),))
-    assert "dataset" in item.input_errors
-    item.set_additional_input("dataset", (object(), object()))
-    assert "dataset" not in item.input_errors
-    item.select_operation(
-        with_input(InputSpec("required", "Required Input", InputRole.REFERENCE_IMAGE), "M03-04")
+
+    rgb_only = with_input(
+        InputSpec("image", "Image", accepted_colour_models=frozenset({ColourModel.RGB})),
+        "M03-04",
     )
-    assert "required" in item.input_errors
+    item.select_operation(rgb_only)
+    assert "image" in item.input_errors

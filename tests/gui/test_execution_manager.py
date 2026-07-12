@@ -8,6 +8,7 @@ from dip_workbench.execution import OperationExecutionManager
 from dip_workbench.operations import (
     ApplyPolicy,
     ImageArtifact,
+    InputSpec,
     ModuleId,
     OperationDefinition,
     OperationId,
@@ -42,7 +43,7 @@ def definition(factory) -> OperationDefinition:  # type: ignore[no-untyped-def]
         ModuleId.M01,
         "Demo",
         "Description",
-        (),
+        (InputSpec("image", "Image"),),
         (),
         PreviewPolicy.DEBOUNCED,
         ApplyPolicy.NONE,

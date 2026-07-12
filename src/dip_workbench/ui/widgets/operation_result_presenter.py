@@ -11,14 +11,14 @@ from dip_workbench.core import ImageAsset
 from dip_workbench.operations import OperationResult, ResultArtifact
 
 
-class GraphRenderSource(Protocol):
+class RenderSource(Protocol):
     def render_image(self, *, minimum_width: int = 1200, minimum_height: int = 800) -> QImage: ...
 
 
 @dataclass(frozen=True, slots=True)
 class DisplayedExportTarget:
     artifact: ResultArtifact
-    render_source: GraphRenderSource | None = None
+    render_source: RenderSource | None = None
 
 
 class OperationResultPresenter(QWidget):

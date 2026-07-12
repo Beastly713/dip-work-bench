@@ -110,11 +110,8 @@ def test_save_rejections_and_parameters(tmp_path: Path) -> None:
     service = ImageIOService()
     gray = asset(np.zeros((2, 2), dtype=np.uint8), ColourModel.GRAY)
     binary = asset(np.zeros((2, 2), dtype=np.uint8), ColourModel.BINARY)
-    labels = asset(np.zeros((2, 2), dtype=np.int32), ColourModel.LABEL)
     with pytest.raises(ExportError, match="parent"):
         service.save(gray, tmp_path / "missing" / "image.png")
-    with pytest.raises(ExportError, match="Label"):
-        service.save(labels, tmp_path / "labels.png")
     with pytest.raises(ExportError, match="JPEG"):
         service.save(binary, tmp_path / "mask.jpg")
     with pytest.raises(ExportError, match="quality"):

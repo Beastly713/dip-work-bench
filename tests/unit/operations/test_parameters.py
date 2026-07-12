@@ -39,7 +39,7 @@ def test_choices_ranges_lists_kernel_and_custom_validator() -> None:
         choices=(ParameterChoice("a", "A"), ParameterChoice("b", "B")),
     )
     choice.validate("b", {})
-    ParameterSpec("range", "Range", ParameterType.FLOAT_RANGE, (0.0, 1.0)).validate((0, 2), {})
+    ParameterSpec("range", "Range", ParameterType.INTEGER_RANGE, (0, 1)).validate((0, 2), {})
     ParameterSpec("kernel", "Kernel", ParameterType.KERNEL, ((1, 2), (3, 4))).validate(((1,),), {})
     custom = ParameterSpec(
         "odd",

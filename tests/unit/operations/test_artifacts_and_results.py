@@ -5,19 +5,19 @@ from dip_workbench.core import ColourModel, ImageAsset, InputValidationError
 from dip_workbench.operations import (
     ApplyCandidate,
     ArtifactType,
-    BitstreamArtifact,
+    CircleOverlay,
     ImageArtifact,
-    LabelMapArtifact,
     MaskArtifact,
     MatrixArtifact,
     OperationResult,
+    OverlayArtifact,
+    OverlayData,
     TextArtifact,
 )
 
 
 def image(model: ColourModel) -> ImageAsset:
-    dtype = np.int32 if model is ColourModel.LABEL else np.uint8
-    return ImageAsset(name="x", data=np.zeros((2, 2), dtype=dtype), colour_model=model)
+    return ImageAsset(name="x", data=np.zeros((2, 2), dtype=np.uint8), colour_model=model)
 
 
 def test_artifacts_freeze_and_validate() -> None:
@@ -29,11 +29,12 @@ def test_artifacts_freeze_and_validate() -> None:
         ImageArtifact("image", "Image", image(ColourModel.GRAY)).artifact_type is ArtifactType.IMAGE
     )
     MaskArtifact("mask", "Mask", image(ColourModel.BINARY))
-    LabelMapArtifact("labels", "Labels", image(ColourModel.LABEL))
+    OverlayArtifact("overlay", "Overlay", OverlayData((CircleOverlay(1, 1, 1),)))
     TextArtifact("text", "Text", "ok")
-    BitstreamArtifact("bits", "Bits", b"1")
     with pytest.raises(InputValidationError):
         MaskArtifact("mask", "Mask", image(ColourModel.GRAY))
+    with pytest.raises(InputValidationError):
+        OverlayArtifact("overlay", "Overlay", object())
 
 
 def test_result_apply_candidates_metrics_and_lookup() -> None:

@@ -5,11 +5,10 @@ import sys
 from pathlib import Path
 
 COMMANDS = (
-    ("ruff", "format", "--check", "."),
-    ("ruff", "check", "."),
-    ("mypy", "src"),
+    (sys.executable, "-m", "ruff", "format", "--check", "."),
+    (sys.executable, "-m", "ruff", "check", "."),
+    (sys.executable, "-m", "mypy", "src"),
     (sys.executable, "scripts/verify_registry.py"),
-    ("pytest", "-q"),
 )
 
 

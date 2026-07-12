@@ -328,8 +328,6 @@ class MainWindow(QMainWindow):
         panel.apply_candidate_changed.connect(self.operation_controller.set_apply_candidate)
         self.operation_controller.changed.connect(self._refresh_operation_workspace)
         self.operation_controller.image_applied.connect(self._academic_image_applied)
-        inputs.load_image_requested.connect(self.load_additional_image_dialog)
-        inputs.clear_input_requested.connect(self.operation_controller.clear_additional_input)
 
     def open_operation(self, definition: OperationDefinition) -> None:
         preview = self.document_controller.document_store.active_preview
@@ -364,28 +362,6 @@ class MainWindow(QMainWindow):
         self.navigation_sidebar.set_collapsed(False)
         self.navigation_sidebar.expand_module(module_id)
         self.show_home_page()
-
-    def load_additional_image_dialog(self, key: str) -> None:
-        definition = self.operation_controller.active_definition
-        if definition is None or not any(item.key == key for item in definition.input_spec):
-            return
-        initial = self._initial_directory("paths/last_open_directory")
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Load Operation Input",
-            str(initial),
-            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
-        )
-        if not path:
-            return
-        try:
-            asset = self.document_controller.image_io.load(path)
-        except (InputValidationError, UnsupportedImageError, OperationExecutionError) as error:
-            self._show_open_error(str(error))
-            return
-        self.operation_controller.set_additional_input(key, asset)
-        self.settings.set("paths/last_open_directory", str(Path(path).parent))
-        self.settings.sync()
 
     def _refresh_operation_workspace(self) -> None:
         if (

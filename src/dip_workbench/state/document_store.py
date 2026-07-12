@@ -6,11 +6,11 @@ from typing import ClassVar
 
 from dip_workbench.core import ColourModel, ImageAsset, InputValidationError
 from dip_workbench.state.history_snapshot_store import HistorySnapshotStore
-from dip_workbench.state.models import ActivePreview, AuxiliaryInput, HistoryEntry
+from dip_workbench.state.models import ActivePreview, HistoryEntry
 
 
 class DocumentStore:
-    """Own original/current images, previews, auxiliary state, and undo history."""
+    """Own original/current images, previews, operation state, and undo history."""
 
     DEFAULT_HISTORY_LIMIT = 25
     _DOCUMENT_MODELS: ClassVar[frozenset[ColourModel]] = frozenset(
@@ -36,7 +36,6 @@ class DocumentStore:
         self._active_preview: ActivePreview | None = None
         self._history: list[HistoryEntry] = []
         self._redo_history: list[HistoryEntry] = []
-        self._auxiliary_inputs: dict[str, AuxiliaryInput] = {}
         self._operation_states: dict[str, Mapping[str, object]] = {}
         self._closed = False
 
@@ -59,10 +58,6 @@ class DocumentStore:
     @property
     def redo_history(self) -> tuple[HistoryEntry, ...]:
         return tuple(self._redo_history)
-
-    @property
-    def auxiliary_inputs(self) -> Mapping[str, AuxiliaryInput]:
-        return MappingProxyType(dict(self._auxiliary_inputs))
 
     @property
     def operation_states(self) -> Mapping[str, Mapping[str, object]]:
@@ -93,7 +88,6 @@ class DocumentStore:
         self._active_preview = None
         self._history.clear()
         self._redo_history.clear()
-        self._auxiliary_inputs.clear()
         self._operation_states.clear()
 
     def set_active_preview(self, preview: ActivePreview) -> None:
@@ -104,27 +98,6 @@ class DocumentStore:
 
     def clear_active_preview(self) -> None:
         self._active_preview = None
-
-    def set_auxiliary_input(self, role: str, value: AuxiliaryInput) -> None:
-        self._validate_key(role, "Auxiliary role")
-        if not isinstance(value, ImageAsset) and not (
-            isinstance(value, tuple)
-            and bool(value)
-            and all(isinstance(item, ImageAsset) for item in value)
-        ):
-            raise InputValidationError("Auxiliary input must contain one or more image assets.")
-        self._auxiliary_inputs[role] = value
-
-    def get_auxiliary_input(self, role: str) -> AuxiliaryInput | None:
-        self._validate_key(role, "Auxiliary role")
-        return self._auxiliary_inputs.get(role)
-
-    def remove_auxiliary_input(self, role: str) -> None:
-        self._validate_key(role, "Auxiliary role")
-        self._auxiliary_inputs.pop(role, None)
-
-    def clear_auxiliary_inputs(self) -> None:
-        self._auxiliary_inputs.clear()
 
     def set_operation_state(self, operation_id: str, state: Mapping[str, object]) -> None:
         self._validate_key(operation_id, "Operation id")

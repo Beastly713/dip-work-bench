@@ -3,7 +3,6 @@
 from collections.abc import Mapping
 from enum import StrEnum
 from types import MappingProxyType
-from typing import cast
 
 from PySide6.QtCore import QObject, Signal
 
@@ -19,12 +18,10 @@ from dip_workbench.execution import (
 )
 from dip_workbench.operations import (
     ApplyPolicy,
-    InputRole,
     OperationDefinition,
     OperationResult,
     PreviewPolicy,
 )
-from dip_workbench.state import AuxiliaryInput
 
 
 class InputSource(StrEnum):
@@ -58,7 +55,6 @@ class OperationController(QObject):
         self._workspace_state = OperationWorkspaceState.NO_OPERATION
         self._input_source = InputSource.ORIGINAL
         self._parameter_values: dict[str, object] = {}
-        self._additional_inputs: dict[str, object] = {}
         self._input_errors: dict[str, str] = {}
         self._parameter_errors: dict[str, str] = {}
         self._active_result: OperationResult | None = None
@@ -91,10 +87,6 @@ class OperationController(QObject):
     @property
     def parameter_values(self) -> Mapping[str, object]:
         return MappingProxyType(dict(self._parameter_values))
-
-    @property
-    def additional_inputs(self) -> Mapping[str, object]:
-        return MappingProxyType(dict(self._additional_inputs))
 
     @property
     def input_errors(self) -> Mapping[str, str]:
@@ -160,14 +152,6 @@ class OperationController(QObject):
         self._cancel_work()
         self.document_controller.clear_active_preview()
         self._active_definition = definition
-        self._additional_inputs = {}
-        for input_spec in definition.input_spec:
-            if input_spec.role is not InputRole.PRIMARY_IMAGE:
-                stored_input = self.document_controller.document_store.get_auxiliary_input(
-                    f"{definition.id}:{input_spec.key}"
-                )
-                if stored_input is not None:
-                    self._additional_inputs[input_spec.key] = stored_input
         saved = self.document_controller.document_store.get_operation_state(str(definition.id))
         defaults = {spec.key: spec.default for spec in definition.parameter_schema}
         parameters = saved.get("parameters") if saved is not None else None
@@ -201,7 +185,6 @@ class OperationController(QObject):
         self.document_controller.clear_active_preview()
         self._active_definition = None
         self._parameter_values.clear()
-        self._additional_inputs.clear()
         self._input_errors.clear()
         self._parameter_errors.clear()
         self._clear_result()
@@ -216,42 +199,18 @@ class OperationController(QObject):
         self._input_source = source
         self._invalidate_result()
 
-    def set_additional_input(self, key: str, value: object) -> None:
-        if self._input_spec(key) is None:
-            raise InputValidationError(f"Unknown operation input: {key}.")
-        self._additional_inputs[key] = value
-        persistable = isinstance(value, ImageAsset) or (
-            isinstance(value, tuple)
-            and bool(value)
-            and all(isinstance(item, ImageAsset) for item in value)
-        )
-        if self._active_definition is not None and persistable:
-            self.document_controller.document_store.set_auxiliary_input(
-                f"{self._active_definition.id}:{key}", cast(AuxiliaryInput, value)
-            )
-        self._invalidate_result()
-
-    def clear_additional_input(self, key: str) -> None:
-        self._additional_inputs.pop(key, None)
-        if self._active_definition is not None:
-            self.document_controller.document_store.remove_auxiliary_input(
-                f"{self._active_definition.id}:{key}"
-            )
-        self._invalidate_result()
-
     def resolved_inputs(self) -> Mapping[str, object]:
-        resolved = dict(self._additional_inputs)
+        resolved: dict[str, object] = {}
         definition = self._active_definition
         if definition is not None:
-            for spec in definition.input_spec:
-                if spec.role is InputRole.PRIMARY_IMAGE:
-                    image = (
-                        self.document_controller.original_image
-                        if self._input_source is InputSource.ORIGINAL
-                        else self.document_controller.current_image
-                    )
-                    if image is not None:
-                        resolved[spec.key] = image
+            spec = definition.input_spec[0]
+            image = (
+                self.document_controller.original_image
+                if self._input_source is InputSource.ORIGINAL
+                else self.document_controller.current_image
+            )
+            if image is not None:
+                resolved[spec.key] = image
         return MappingProxyType(resolved)
 
     def set_parameter_values(self, values: Mapping[str, object]) -> None:
@@ -370,16 +329,8 @@ class OperationController(QObject):
                     spec.key: spec.default for spec in definition.parameter_schema
                 }
                 self._input_source = self._default_source()
-                self._selected_apply_candidate = None
-                self._persist()
-            self._additional_inputs = {}
-            for input_spec in definition.input_spec:
-                if input_spec.role is not InputRole.PRIMARY_IMAGE:
-                    value = self.document_controller.document_store.get_auxiliary_input(
-                        f"{definition.id}:{input_spec.key}"
-                    )
-                    if value is not None:
-                        self._additional_inputs[input_spec.key] = value
+            self._selected_apply_candidate = None
+            self._persist()
         self._validate()
         self.changed.emit()
 
@@ -391,45 +342,12 @@ class OperationController(QObject):
             self._workspace_state = OperationWorkspaceState.NO_OPERATION
             return
         inputs = self.resolved_inputs()
-        for spec in definition.input_spec:
-            value = inputs.get(spec.key)
-            values = (
-                list(value)
-                if spec.multiple and isinstance(value, (tuple, list))
-                else ([] if value is None else [value])
-            )
-            if spec.required and not values:
-                self._input_errors[spec.key] = f"{spec.label} is required."
-                continue
-            if not values:
-                continue
-            if len(values) < spec.minimum_count:
-                self._input_errors[spec.key] = (
-                    f"{spec.label} needs at least {spec.minimum_count} items."
-                )
-            if spec.maximum_count is not None and len(values) > spec.maximum_count:
-                self._input_errors[spec.key] = (
-                    f"{spec.label} allows at most {spec.maximum_count} items."
-                )
-            if not spec.multiple and len(values) > 1:
-                self._input_errors[spec.key] = f"{spec.label} accepts one value."
-            images = [item for item in values if isinstance(item, ImageAsset)]
-            if spec.accepted_colour_models and len(images) != len(values):
-                self._input_errors[spec.key] = f"{spec.label} must contain image data."
-            if spec.accepted_colour_models and any(
-                item.colour_model not in spec.accepted_colour_models for item in images
-            ):
-                self._input_errors[spec.key] = f"{spec.label} has an unsupported colour model."
-            if spec.same_dimensions_as and images:
-                reference = inputs.get(spec.same_dimensions_as)
-                reference_image = reference if isinstance(reference, ImageAsset) else None
-                if reference_image is not None and any(
-                    (item.width, item.height) != (reference_image.width, reference_image.height)
-                    for item in images
-                ):
-                    self._input_errors[spec.key] = f"{spec.label} must have matching dimensions."
-            if spec.requires_interaction and not values:
-                self._input_errors[spec.key] = f"{spec.label} requires a selection."
+        spec = definition.input_spec[0]
+        value = inputs.get(spec.key)
+        if not isinstance(value, ImageAsset):
+            self._input_errors[spec.key] = f"{spec.label} is required."
+        elif spec.accepted_colour_models and value.colour_model not in spec.accepted_colour_models:
+            self._input_errors[spec.key] = f"{spec.label} has an unsupported colour model."
         for parameter_spec in definition.parameter_schema:
             try:
                 parameter_spec.validate(
@@ -571,33 +489,15 @@ class OperationController(QObject):
 
     def _default_source(self) -> InputSource:
         definition = self._require_definition()
-        primary = next(
-            (item for item in definition.input_spec if item.role is InputRole.PRIMARY_IMAGE), None
-        )
-        return (
-            InputSource.ORIGINAL
-            if primary is None or primary.allow_original
-            else InputSource.CURRENT
-        )
+        primary = definition.input_spec[0]
+        return InputSource.ORIGINAL if primary.allow_original else InputSource.CURRENT
 
     def _source_allowed(self, source: InputSource) -> bool:
         definition = self._active_definition
         if definition is None:
             return False
-        primary = next(
-            (item for item in definition.input_spec if item.role is InputRole.PRIMARY_IMAGE), None
-        )
-        return primary is None or (
-            primary.allow_original if source is InputSource.ORIGINAL else primary.allow_current
-        )
-
-    def _input_spec(self, key: str):  # type: ignore[no-untyped-def]
-        definition = self._active_definition
-        return (
-            next((item for item in definition.input_spec if item.key == key), None)
-            if definition
-            else None
-        )
+        primary = definition.input_spec[0]
+        return primary.allow_original if source is InputSource.ORIGINAL else primary.allow_current
 
     def _require_definition(self) -> OperationDefinition:
         if self._active_definition is None:
@@ -621,7 +521,6 @@ class OperationController(QObject):
             metadata["original_asset_id"],
             metadata["current_asset_id"],
             self._input_source,
-            tuple(sorted((key, id(value)) for key, value in self._additional_inputs.items())),
         )
 
     def _request_document_current(self, request: OperationRequest) -> bool:

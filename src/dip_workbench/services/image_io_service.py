@@ -95,8 +95,6 @@ class ImageIOService:
         suffix = destination.suffix.lower()
         if suffix not in self.SUPPORTED_EXTENSIONS:
             raise ExportError(f"Unsupported output extension: {destination.suffix or '(none)'}.")
-        if asset.colour_model is ColourModel.LABEL:
-            raise ExportError("Label maps require an explicit display mapping before saving.")
         if asset.colour_model not in {ColourModel.RGB, ColourModel.GRAY, ColourModel.BINARY}:
             raise ExportError("This image asset cannot be saved.")
         if (

@@ -16,14 +16,7 @@ class ParameterType(StrEnum):
     ENUM = "enum"
     RADIO = "radio"
     INTEGER_RANGE = "integer_range"
-    FLOAT_RANGE = "float_range"
-    MULTI_SELECT = "multi_select"
-    TEXT_LIST = "text_list"
-    NUMERIC_LIST = "numeric_list"
-    COLOUR = "colour"
     KERNEL = "kernel"
-    FILE = "file"
-    IMAGE = "image"
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,30 +139,12 @@ class ParameterSpec:
         choice_values = [choice.value for choice in self.choices]
         if kind in {ParameterType.ENUM, ParameterType.RADIO} and value not in choice_values:
             raise ParameterValidationError(f"{self.label} has an invalid choice.")
-        if kind in {ParameterType.INTEGER_RANGE, ParameterType.FLOAT_RANGE}:
+        if kind is ParameterType.INTEGER_RANGE:
             if not isinstance(value, (tuple, list)) or len(value) != 2:
                 raise ParameterValidationError(f"{self.label} must contain two values.")
-            valid = (
-                all(isinstance(v, int) and not isinstance(v, bool) for v in value)
-                if kind is ParameterType.INTEGER_RANGE
-                else all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value)
-            )
+            valid = all(isinstance(v, int) and not isinstance(v, bool) for v in value)
             if not valid or value[0] > value[1]:
                 raise ParameterValidationError(f"{self.label} range is invalid.")
-        if kind is ParameterType.MULTI_SELECT and (
-            not isinstance(value, (tuple, list, set, frozenset))
-            or any(v not in choice_values for v in value)
-        ):
-            raise ParameterValidationError(f"{self.label} selections are invalid.")
-        if kind is ParameterType.TEXT_LIST and (
-            not isinstance(value, (tuple, list)) or any(not isinstance(v, str) for v in value)
-        ):
-            raise ParameterValidationError(f"{self.label} must contain text.")
-        if kind is ParameterType.NUMERIC_LIST and (
-            not isinstance(value, (tuple, list))
-            or any(not isinstance(v, (int, float)) or isinstance(v, bool) for v in value)
-        ):
-            raise ParameterValidationError(f"{self.label} must contain numbers.")
         if kind is ParameterType.KERNEL:
             if (
                 not isinstance(value, (tuple, list))
@@ -186,9 +161,7 @@ class ParameterSpec:
         candidates: list[int | float] = []
         if numeric:
             candidates = [value]  # type: ignore[list-item]
-        elif kind in {ParameterType.INTEGER_RANGE, ParameterType.FLOAT_RANGE} and isinstance(
-            value, (tuple, list)
-        ):
+        elif kind is ParameterType.INTEGER_RANGE and isinstance(value, (tuple, list)):
             candidates = list(value)
         if self.minimum is not None and any(v < self.minimum for v in candidates):
             raise ParameterValidationError(f"{self.label} is below minimum.")

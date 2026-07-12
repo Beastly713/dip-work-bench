@@ -1,21 +1,17 @@
 import pytest
 
 from dip_workbench.core import ColourModel, InputValidationError
-from dip_workbench.operations import InputRole, InputSpec
+from dip_workbench.operations import InputSpec
 
 
-def test_valid_input_contracts() -> None:
+def test_valid_single_image_input_contract() -> None:
     spec = InputSpec(
-        "primary_image",
-        "Primary",
-        InputRole.PRIMARY_IMAGE,
-        accepted_colour_models=frozenset({ColourModel.RGB}),
+        "image",
+        "Image",
+        accepted_colour_models=frozenset({ColourModel.RGB, ColourModel.GRAY}),
     )
-    assert spec.accepted_colour_models == frozenset({ColourModel.RGB})
-    dataset = InputSpec(
-        "images", "Images", InputRole.DATASET, multiple=True, minimum_count=2, maximum_count=None
-    )
-    assert dataset.multiple
+    assert spec.allow_original and spec.allow_current
+    assert spec.accepted_colour_models == frozenset({ColourModel.RGB, ColourModel.GRAY})
 
 
 @pytest.mark.parametrize(
@@ -23,17 +19,12 @@ def test_valid_input_contracts() -> None:
     [
         {"key": "Bad"},
         {"label": ""},
-        {"minimum_count": 0},
-        {"maximum_count": 0},
+        {"accepted_colour_models": frozenset({"RGB"})},
         {"allow_original": False, "allow_current": False},
     ],
 )
 def test_invalid_inputs(kwargs: dict[str, object]) -> None:
-    values: dict[str, object] = {
-        "key": "primary_image",
-        "label": "Primary",
-        "role": InputRole.PRIMARY_IMAGE,
-    }
+    values: dict[str, object] = {"key": "image", "label": "Image"}
     values.update(kwargs)
     with pytest.raises(InputValidationError):
         InputSpec(**values)  # type: ignore[arg-type]

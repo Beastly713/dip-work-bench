@@ -17,7 +17,7 @@ from dip_workbench.operations.definitions import (
     PreviewPolicy,
 )
 from dip_workbench.operations.identifiers import ModuleId, OperationId
-from dip_workbench.operations.inputs import InputRole, InputSpec
+from dip_workbench.operations.inputs import InputSpec
 from dip_workbench.operations.parameters import ParameterChoice, ParameterSpec, ParameterType
 from dip_workbench.operations.registry import operation_registry
 from dip_workbench.operations.results import OperationResult
@@ -107,7 +107,6 @@ IMAGE_NEGATIVE_DEFINITION = OperationDefinition(
         InputSpec(
             "image",
             "Primary Image",
-            InputRole.PRIMARY_IMAGE,
             accepted_colour_models=frozenset({ColourModel.RGB, ColourModel.GRAY}),
         ),
     ),
