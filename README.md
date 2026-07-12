@@ -101,6 +101,19 @@ and image export use the existing document workflow. The production registry che
 academic tool. The rest of Module 3 is not implemented; C11 adds complete navigation and generic
 parameter controls.
 
+## Operation navigation and configuration
+
+C11 exposes all eleven permanent syllabus modules in the navigation sidebar and on Home while
+keeping unregistered tools unavailable. Registry-backed search matches IDs, names, descriptions,
+aliases, and module names; `Ctrl+K` reveals the sidebar and focuses search. Accordion and compact
+module-number modes, active-tool styling, module cards, and session-only recent operations provide
+consistent entry points. Generic auxiliary image inputs can be loaded, replaced, cleared, and
+validated without conversion or resizing. Standard parameter schemas now generate typed controls,
+including ranges, choices, lists, advanced settings, dynamic conditions, and editable kernels.
+Valid immediate or debounced changes can refresh Preview automatically. The registry remains at
+one academic operation, M03-01; C12 adds the general comparison and graph/table/matrix/tree result
+system.
+
 ## Architecture principles
 
 The project uses a Python 3.11 `src` layout, explicit dependency injection, typed application

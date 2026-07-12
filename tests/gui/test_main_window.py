@@ -76,6 +76,7 @@ def test_action_availability_and_panel_constraints(qtbot, tmp_path) -> None:  # 
         "show_navigation",
         "show_parameters",
         "image_negative",
+        "operation_search",
     }
     for key, action in window.action_map.items():
         assert action.isEnabled() is (key in enabled)

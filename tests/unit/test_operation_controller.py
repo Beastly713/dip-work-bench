@@ -47,6 +47,7 @@ class FakeManager(QObject):
         super().__init__()
         self.request: OperationRequest | None = None
         self.generation = 0
+        self.debounce_ms: int | None = -1
 
     def _request(self, definition, mode, inputs, parameters, document_metadata):
         self.generation += 1
@@ -73,6 +74,7 @@ class FakeManager(QObject):
         document_metadata=None,
         debounce_ms=None,
     ):
+        self.debounce_ms = debounce_ms
         return self._request(
             definition, ExecutionMode.PREVIEW, inputs, parameters, document_metadata
         )
@@ -87,7 +89,10 @@ class FakeManager(QObject):
 
 
 def definition(
-    *, allow_original=True, apply_policy=ApplyPolicy.PRIMARY_ARTIFACT
+    *,
+    allow_original=True,
+    apply_policy=ApplyPolicy.PRIMARY_ARTIFACT,
+    preview_policy=PreviewPolicy.IMMEDIATE,
 ) -> OperationDefinition:
     return OperationDefinition(
         OperationId("M03-01"),
@@ -96,7 +101,7 @@ def definition(
         "Test the generic workspace.",
         (InputSpec("image", "Image", InputRole.PRIMARY_IMAGE, allow_original=allow_original),),
         (ParameterSpec("amount", "Amount", ParameterType.INTEGER, 2, minimum=1),),
-        PreviewPolicy.IMMEDIATE,
+        preview_policy,
         apply_policy,
         PresenterId.T1_SINGLE_IMAGE_TRANSFORMATION,
         lambda: object(),
@@ -197,3 +202,20 @@ def test_apply_none_and_document_change(tmp_path) -> None:
     current = store.current_image
     item.document_changed()
     assert store.current_image is current
+
+
+def test_policy_driven_parameter_preview(tmp_path) -> None:
+    immediate, immediate_manager, _ = controller(tmp_path / "immediate")
+    immediate.select_operation(definition())
+    immediate.parameter_values_changed({"amount": 3})
+    assert immediate_manager.request is not None and immediate_manager.debounce_ms == 0
+
+    debounced, debounced_manager, _ = controller(tmp_path / "debounced")
+    debounced.select_operation(definition(preview_policy=PreviewPolicy.DEBOUNCED))
+    debounced.parameter_values_changed({"amount": 3})
+    assert debounced_manager.request is not None and debounced_manager.debounce_ms is None
+
+    explicit, explicit_manager, _ = controller(tmp_path / "explicit")
+    explicit.select_operation(definition(preview_policy=PreviewPolicy.EXPLICIT))
+    explicit.parameter_values_changed({"amount": 3})
+    assert explicit_manager.request is None

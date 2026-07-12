@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 from enum import StrEnum
 from types import MappingProxyType
+from typing import cast
 
 from PySide6.QtCore import QObject, Signal
 
@@ -23,6 +24,7 @@ from dip_workbench.operations import (
     OperationResult,
     PreviewPolicy,
 )
+from dip_workbench.state import AuxiliaryInput
 
 
 class InputSource(StrEnum):
@@ -158,6 +160,14 @@ class OperationController(QObject):
         self._cancel_work()
         self.document_controller.clear_active_preview()
         self._active_definition = definition
+        self._additional_inputs = {}
+        for input_spec in definition.input_spec:
+            if input_spec.role is not InputRole.PRIMARY_IMAGE:
+                stored_input = self.document_controller.document_store.get_auxiliary_input(
+                    f"{definition.id}:{input_spec.key}"
+                )
+                if stored_input is not None:
+                    self._additional_inputs[input_spec.key] = stored_input
         saved = self.document_controller.document_store.get_operation_state(str(definition.id))
         defaults = {spec.key: spec.default for spec in definition.parameter_schema}
         parameters = saved.get("parameters") if saved is not None else None
@@ -210,10 +220,23 @@ class OperationController(QObject):
         if self._input_spec(key) is None:
             raise InputValidationError(f"Unknown operation input: {key}.")
         self._additional_inputs[key] = value
+        persistable = isinstance(value, ImageAsset) or (
+            isinstance(value, tuple)
+            and bool(value)
+            and all(isinstance(item, ImageAsset) for item in value)
+        )
+        if self._active_definition is not None and persistable:
+            self.document_controller.document_store.set_auxiliary_input(
+                f"{self._active_definition.id}:{key}", cast(AuxiliaryInput, value)
+            )
         self._invalidate_result()
 
     def clear_additional_input(self, key: str) -> None:
         self._additional_inputs.pop(key, None)
+        if self._active_definition is not None:
+            self.document_controller.document_store.remove_auxiliary_input(
+                f"{self._active_definition.id}:{key}"
+            )
         self._invalidate_result()
 
     def resolved_inputs(self) -> Mapping[str, object]:
@@ -245,12 +268,20 @@ class OperationController(QObject):
     def set_parameter_value(self, key: str, value: object) -> None:
         self.set_parameter_values({key: value})
 
+    def parameter_values_changed(self, values: Mapping[str, object]) -> None:
+        self.set_parameter_values(values)
+        self._automatic_preview()
+
     def reset_parameters(self) -> None:
         definition = self._require_definition()
         self._parameter_values = {spec.key: spec.default for spec in definition.parameter_schema}
         self._invalidate_result()
+        self._automatic_preview()
 
     def preview_or_run(self) -> None:
+        self._submit_preview(0)
+
+    def _submit_preview(self, debounce_ms: int | None) -> None:
         definition = self._require_definition()
         self._validate()
         if not self.can_preview:
@@ -268,10 +299,19 @@ class OperationController(QObject):
             inputs=inputs,
             parameters=self._parameter_values,
             document_metadata=metadata,
-            debounce_ms=0,
+            debounce_ms=debounce_ms,
         )
         self._preview_signature = self._signature()
         self.changed.emit()
+
+    def _automatic_preview(self) -> None:
+        definition = self._active_definition
+        if definition is None or not self.can_preview:
+            return
+        if definition.preview_policy is PreviewPolicy.IMMEDIATE:
+            self._submit_preview(0)
+        elif definition.preview_policy is PreviewPolicy.DEBOUNCED:
+            self._submit_preview(None)
 
     def set_apply_candidate(self, artifact_key: str | None) -> None:
         if artifact_key is not None and (
@@ -332,6 +372,14 @@ class OperationController(QObject):
                 self._input_source = self._default_source()
                 self._selected_apply_candidate = None
                 self._persist()
+            self._additional_inputs = {}
+            for input_spec in definition.input_spec:
+                if input_spec.role is not InputRole.PRIMARY_IMAGE:
+                    value = self.document_controller.document_store.get_auxiliary_input(
+                        f"{definition.id}:{input_spec.key}"
+                    )
+                    if value is not None:
+                        self._additional_inputs[input_spec.key] = value
         self._validate()
         self.changed.emit()
 

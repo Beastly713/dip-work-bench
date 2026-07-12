@@ -5,6 +5,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
+from PySide6.QtWidgets import QLabel
 
 from dip_workbench.controllers import DocumentController, OperationController
 from dip_workbench.core import ColourModel, ImageAsset
@@ -74,10 +75,7 @@ def test_identity_inputs_ready_and_parameter_host(qtbot, tmp_path) -> None:
     assert workspace.operation_input_strip.original_button.isChecked()
     assert "Inputs are ready" in workspace.result_workspace._messages[item.workspace_state].text()
     assert panel.preview_button.text() == "Preview"
-    assert (
-        "unavailable"
-        in panel.host.findChildren(type(workspace.operation_header.name_label))[0].text()
-    )
+    assert "Amount" in [label.text() for label in panel.host.findChildren(QLabel)]
 
 
 def test_missing_input_open_action_and_apply_policy(qtbot, tmp_path) -> None:

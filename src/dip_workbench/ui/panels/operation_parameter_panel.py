@@ -74,12 +74,16 @@ class OperationParameterPanel(QWidget):
                 self._editor = candidate
                 self._editor.values_changed.connect(self.parameter_values_changed)
                 self.host_layout.addWidget(self._editor)
-        if self._editor is None:
-            message = QLabel(
-                "No parameters required."
-                if not definition.parameter_schema
-                else "The operation-specific parameter editor is unavailable."
+        if self._editor is None and definition.parameter_schema:
+            from dip_workbench.ui.widgets.generated_parameter_editor import (
+                GeneratedParameterEditor,
             )
+
+            self._editor = GeneratedParameterEditor(definition.parameter_schema)
+            self._editor.values_changed.connect(self.parameter_values_changed)
+            self.host_layout.addWidget(self._editor)
+        if self._editor is None:
+            message = QLabel("No parameters required.")
             message.setWordWrap(True)
             self.host_layout.addWidget(message)
         self.refresh(controller)

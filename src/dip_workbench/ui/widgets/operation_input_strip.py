@@ -20,6 +20,8 @@ from dip_workbench.operations import InputRole
 class OperationInputStrip(QWidget):
     source_changed = Signal(object)
     open_image_requested = Signal()
+    load_image_requested = Signal(str)
+    clear_input_requested = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -48,6 +50,9 @@ class OperationInputStrip(QWidget):
         self.additional_box = QGroupBox("Additional inputs")
         self.additional_layout = QVBoxLayout(self.additional_box)
         layout.addWidget(self.additional_box)
+        self.additional_summaries: dict[str, QLabel] = {}
+        self.load_buttons: dict[str, QPushButton] = {}
+        self.clear_buttons: dict[str, QPushButton] = {}
 
     def refresh(self, controller: OperationController) -> None:
         definition = controller.active_definition
@@ -79,17 +84,67 @@ class OperationInputStrip(QWidget):
             widget = item.widget() if item is not None else None
             if widget is not None:
                 widget.deleteLater()
+        self.additional_summaries.clear()
+        self.load_buttons.clear()
+        self.clear_buttons.clear()
         additional = [x for x in definition.input_spec if x.role is not InputRole.PRIMARY_IMAGE]
         for spec in additional:
             value = controller.additional_inputs.get(spec.key)
-            count = len(value) if isinstance(value, (tuple, list)) else int(value is not None)
             error = controller.input_errors.get(spec.key)
-            label = QLabel(
-                f"{spec.label} — {f'{count} items' if count else 'Not provided'} ({'Required' if spec.required else 'Optional'})"
-                + (f"\n{error}" if error else "")
-            )
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            label = QLabel(self._summary(spec.label, spec.role, value, spec.minimum_count))
             label.setWordWrap(True)
             if error:
+                label.setText(f"{label.text()}\n{error}")
                 label.setStyleSheet("color:#b91c1c")
-            self.additional_layout.addWidget(label)
+            row_layout.addWidget(label, 1)
+            self.additional_summaries[spec.key] = label
+            if spec.role in {
+                InputRole.SECONDARY_IMAGE,
+                InputRole.REFERENCE_IMAGE,
+                InputRole.SECOND_FRAME,
+                InputRole.BINARY_MASK,
+            }:
+                load = QPushButton("Change" if value is not None else "Load")
+                load.clicked.connect(
+                    lambda checked=False, key=spec.key: self.load_image_requested.emit(key)
+                )
+                clear = QPushButton("Clear")
+                clear.setVisible(value is not None)
+                clear.clicked.connect(
+                    lambda checked=False, key=spec.key: self.clear_input_requested.emit(key)
+                )
+                self.load_buttons[spec.key] = load
+                self.clear_buttons[spec.key] = clear
+                row_layout.addWidget(load)
+                row_layout.addWidget(clear)
+            self.additional_layout.addWidget(row)
         self.additional_box.setVisible(bool(additional))
+
+    @staticmethod
+    def _summary(label: str, role: InputRole, value: object, minimum_count: int) -> str:
+        requirement = f"required, minimum {minimum_count}" if minimum_count else "optional"
+        if isinstance(value, ImageAsset):
+            return f"{label} — {value.name} — {value.width} x {value.height} — {value.colour_model.value} ({requirement})"
+        if role is InputRole.DATASET and isinstance(value, (tuple, list)):
+            images = [item for item in value if isinstance(item, ImageAsset)]
+            dimensions = {(item.width, item.height) for item in images}
+            size = (
+                f"{next(iter(dimensions))[0]} x {next(iter(dimensions))[1]}"
+                if len(dimensions) == 1
+                else "Mixed dimensions"
+            )
+            return f"{label} — {len(value)} images — {size} (minimum {minimum_count})"
+        count = len(value) if isinstance(value, (tuple, list, set, frozenset)) else 0
+        if role is InputRole.SEED_POINTS:
+            return f"{label} — {count} selected"
+        if role in {InputRole.REGION_SELECTION, InputRole.BLOCK_SELECTION} and value is not None:
+            fields = tuple(getattr(value, key, None) for key in ("x", "y", "width", "height"))
+            if all(item is not None for item in fields):
+                return f"{label} — x={fields[0]}, y={fields[1]}, {fields[2]} x {fields[3]}"
+        if role is InputRole.MARKERS and isinstance(value, dict):
+            return f"{label} — " + ", ".join(f"{key}: {len(items)}" for key, items in value.items())
+        if role is InputRole.CONTOUR_SELECTION and value is not None:
+            return f"{label} — Selected"
+        return f"{label} — Not provided ({requirement})"

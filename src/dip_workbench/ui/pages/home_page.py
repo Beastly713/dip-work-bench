@@ -1,15 +1,29 @@
 """DIP Workbench home page."""
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from dip_workbench.core import ImageAsset
+from dip_workbench.operations import ModuleId, OperationDefinition, OperationRegistry
+from dip_workbench.ui.widgets.module_card import ModuleCard
 
 
 class HomePage(QWidget):
     """Present primary-image opening and current-document choices."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    module_requested = Signal(object)
+    recent_operation_requested = Signal(object)
+
+    def __init__(self, registry: OperationRegistry, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(48, 42, 48, 42)
@@ -34,7 +48,7 @@ class HomePage(QWidget):
 
         drop_area = QFrame()
         drop_area.setObjectName("dropArea")
-        drop_area.setMinimumHeight(260)
+        drop_area.setMinimumHeight(160)
         drop_area.setStyleSheet(
             "QFrame#dropArea { background: #1f2937; border: 1px dashed #94a3b8; "
             "border-radius: 6px; }"
@@ -65,6 +79,33 @@ class HomePage(QWidget):
         self.current_document.hide()
         layout.addWidget(self.current_document)
 
+        modules_heading = QLabel("Academic Modules")
+        modules_heading.setStyleSheet("font-size: 18px; font-weight: 600;")
+        layout.addWidget(modules_heading)
+        module_host = QWidget()
+        module_layout = QGridLayout(module_host)
+        self.module_cards: dict[ModuleId, ModuleCard] = {}
+        for index, module_id in enumerate(ModuleId):
+            card = ModuleCard(module_id, registry.by_module(module_id))
+            card.clicked.connect(self.module_requested)
+            self.module_cards[module_id] = card
+            module_layout.addWidget(card, index // 3, index % 3)
+        module_scroll = QScrollArea()
+        module_scroll.setWidgetResizable(True)
+        module_scroll.setMinimumHeight(210)
+        module_scroll.setWidget(module_host)
+        layout.addWidget(module_scroll)
+
+        self.recent_frame = QFrame()
+        recent_layout = QVBoxLayout(self.recent_frame)
+        recent_heading = QLabel("Recently Used Operations")
+        recent_heading.setStyleSheet("font-size: 17px; font-weight: 600;")
+        recent_layout.addWidget(recent_heading)
+        self.recent_layout = QVBoxLayout()
+        recent_layout.addLayout(self.recent_layout)
+        self.recent_frame.hide()
+        layout.addWidget(self.recent_frame)
+
     def set_current_document(self, asset: "ImageAsset | None") -> None:
         if asset is None:
             self.current_document.hide()
@@ -76,3 +117,17 @@ class HomePage(QWidget):
 
     open_image_requested = Signal()
     continue_requested = Signal()
+
+    def set_recent_operations(self, definitions: tuple[OperationDefinition, ...]) -> None:
+        while self.recent_layout.count():
+            item = self.recent_layout.takeAt(0)
+            widget = item.widget() if item is not None else None
+            if widget is not None:
+                widget.deleteLater()
+        for definition in definitions:
+            button = QPushButton(f"{definition.id} {definition.display_name}")
+            button.clicked.connect(
+                lambda checked=False, item=definition: self.recent_operation_requested.emit(item)
+            )
+            self.recent_layout.addWidget(button)
+        self.recent_frame.setVisible(bool(definitions))

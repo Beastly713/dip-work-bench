@@ -69,14 +69,15 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
 
         self.page_stack = QStackedWidget()
-        self.home_page = HomePage()
+        self.home_page = HomePage(operation_registry)
         self.operation_workspace = OperationWorkspace()
         self.report_builder_page = ReportBuilderPage(self.show_home_page)
         self.page_stack.addWidget(self.home_page)
         self.page_stack.addWidget(self.operation_workspace)
         self.page_stack.addWidget(self.report_builder_page)
 
-        self.navigation_sidebar = NavigationSidebar(self.show_home_page)
+        self.navigation_sidebar = NavigationSidebar(self.show_home_page, operation_registry)
+        self._recent_operations: list[OperationDefinition] = []
         self.parameter_panel = ParameterPanel()
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.main_splitter.setChildrenCollapsible(False)
@@ -145,6 +146,7 @@ class MainWindow(QMainWindow):
         self._add_action("save", "Save Current Image", shortcut="Ctrl+S")
         self._add_action("export_result", "Export Displayed Result")
         self._add_action("image_negative", "M03-01 Image Negative", enabled=True)
+        self._add_action("operation_search", "Search Operations", enabled=True, shortcut="Ctrl+K")
         self._add_action("report", "Open Report Builder", enabled=True).triggered.connect(
             self.show_report_builder
         )
@@ -214,7 +216,7 @@ class MainWindow(QMainWindow):
                     "presentation",
                 ),
             ),
-            ("Operations", ("image_negative",)),
+            ("Operations", ("image_negative", "operation_search")),
             ("Help", ("about_operation", "shortcuts", "about")),
         )
         self.menus: dict[str, QMenu] = {}
@@ -246,6 +248,7 @@ class MainWindow(QMainWindow):
         self.action_map["image_negative"].triggered.connect(
             lambda: self.open_operation(operation_registry.get("M03-01"))
         )
+        self.action_map["operation_search"].triggered.connect(self.focus_operation_search)
         self.action_map["undo"].triggered.connect(self.undo_document)
         self.action_map["redo"].triggered.connect(self.redo_document)
         self.action_map["reset"].triggered.connect(self.reset_document)
@@ -256,6 +259,9 @@ class MainWindow(QMainWindow):
         self.action_map["zoom_out"].triggered.connect(canvas.zoom_out)
         self.home_page.open_image_requested.connect(self.open_primary_image_dialog)
         self.home_page.continue_requested.connect(self.show_operation_workspace)
+        self.home_page.module_requested.connect(self.show_home_module)
+        self.home_page.recent_operation_requested.connect(self.open_operation)
+        self.navigation_sidebar.operation_selected.connect(self.open_operation)
         self.operation_workspace.open_image_requested.connect(self.open_primary_image_dialog)
         canvas.zoom_changed.connect(self.workbench_status_bar.set_zoom_status)
         canvas.pixel_hovered.connect(self._show_pixel_status)
@@ -303,13 +309,15 @@ class MainWindow(QMainWindow):
         inputs.open_image_requested.connect(self.open_primary_image_dialog)
         result.open_image_requested.connect(self.open_primary_image_dialog)
         result.cancel_requested.connect(self.operation_controller.cancel)
-        panel.parameter_values_changed.connect(self.operation_controller.set_parameter_values)
+        panel.parameter_values_changed.connect(self.operation_controller.parameter_values_changed)
         panel.preview_requested.connect(self.operation_controller.preview_or_run)
         panel.apply_requested.connect(self.operation_controller.apply)
         panel.reset_requested.connect(self.operation_controller.reset_parameters)
         panel.apply_candidate_changed.connect(self.operation_controller.set_apply_candidate)
         self.operation_controller.changed.connect(self._refresh_operation_workspace)
         self.operation_controller.image_applied.connect(self._academic_image_applied)
+        inputs.load_image_requested.connect(self.load_additional_image_dialog)
+        inputs.clear_input_requested.connect(self.operation_controller.clear_additional_input)
 
     def open_operation(self, definition: OperationDefinition) -> None:
         preview = self.document_controller.document_store.active_preview
@@ -319,10 +327,53 @@ class MainWindow(QMainWindow):
             self.document_controller.clear_active_preview()
         self.operation_workspace.image_canvas.cancel_interaction()
         self.operation_controller.select_operation(definition)
+        self.navigation_sidebar.set_active_operation(definition)
+        self._recent_operations = [
+            definition,
+            *(item for item in self._recent_operations if item.id != definition.id),
+        ][:5]
+        self.home_page.set_recent_operations(tuple(self._recent_operations))
         self.operation_workspace.show_academic_operation(self.operation_controller)
         self.parameter_panel.operation_panel.configure(self.operation_controller)
         self.parameter_panel.show_operation_panel()
         self.show_operation_workspace()
+
+    def focus_operation_search(self) -> None:
+        self.action_map["show_navigation"].setChecked(True)
+        self.navigation_sidebar.show()
+        self.navigation_sidebar.focus_search()
+
+    def show_home_module(self, module_id: object) -> None:
+        from dip_workbench.operations import ModuleId
+
+        if not isinstance(module_id, ModuleId):
+            return
+        self.action_map["show_navigation"].setChecked(True)
+        self.navigation_sidebar.set_collapsed(False)
+        self.navigation_sidebar.expand_module(module_id)
+        self.show_home_page()
+
+    def load_additional_image_dialog(self, key: str) -> None:
+        definition = self.operation_controller.active_definition
+        if definition is None or not any(item.key == key for item in definition.input_spec):
+            return
+        initial = self._initial_directory("paths/last_open_directory")
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load Operation Input",
+            str(initial),
+            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
+        )
+        if not path:
+            return
+        try:
+            asset = self.document_controller.image_io.load(path)
+        except (InputValidationError, UnsupportedImageError, OperationExecutionError) as error:
+            self._show_open_error(str(error))
+            return
+        self.operation_controller.set_additional_input(key, asset)
+        self.settings.set("paths/last_open_directory", str(Path(path).parent))
+        self.settings.sync()
 
     def _refresh_operation_workspace(self) -> None:
         if (

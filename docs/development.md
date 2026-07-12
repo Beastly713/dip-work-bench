@@ -92,6 +92,16 @@ Undo, Redo, and displayed-image export complete the vertical slice. The registry
 11 modules and one operation. C11 adds complete navigation and generated parameter controls; no
 other Module 3 operation is present in C10.
 
+C11 completes shared operation configuration without adding production tools. Eleven registry-
+driven module groups and Home cards are visible, but only registered operations are selectable.
+Search includes aliases and module names, `Ctrl+K` focuses it, and session recent operations are
+deduplicated. Auxiliary image inputs use operation-namespaced document state and retain contract
+errors inline without silent conversion or resizing. Standard parameter schemas generate typed
+controls with dynamic visibility/enabling, collapsed advanced settings, and kernel editing.
+Immediate and debounced policies can automatically refresh valid previews. Registry verification
+continues to require exactly M03-01. C12 introduces the general comparison, graph, table, matrix,
+and tree presentation system.
+
 For headless GUI validation on Ubuntu, run:
 
 ```bash
