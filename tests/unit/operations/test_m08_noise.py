@@ -64,3 +64,27 @@ def test_speckle_is_input_scaled_and_model_preserved() -> None:
     assert output.colour_model is ColourModel.GRAY  # type: ignore[union-attr]
     assert int(output.data[0, 0]) == 0  # type: ignore[union-attr]
     assert int(output.data[0, 2]) != 200  # type: ignore[union-attr]
+
+
+def test_rgb_luminance_noise_reports_real_nonzero_delta() -> None:
+    image = ImageAsset("rgb", np.full((12, 12, 3), 120, dtype=np.uint8), ColourModel.RGB)
+    result = AddNoiseExecutor().execute(
+        context(image, {**BASE, "processing": "luminance", "gaussian_std": 30.0})
+    )
+    assert result.metrics["Standard Deviation of Applied Delta"] > 0
+    assert result.metrics["Changed Pixels Percentage"] > 0
+    np.testing.assert_array_equal(image.data, np.full((12, 12, 3), 120, dtype=np.uint8))
+
+
+def test_rgb_per_channel_changed_percentage_counts_pixels_not_channels() -> None:
+    data = np.full((10, 10, 3), 120, dtype=np.uint8)
+    image = ImageAsset("rgb", data, ColourModel.RGB)
+    result = AddNoiseExecutor().execute(
+        context(image, {**BASE, "processing": "per_channel", "gaussian_std": 25.0})
+    )
+    output = result.primary_artifact.data.data  # type: ignore[union-attr]
+    delta = output.astype(np.int16) - data.astype(np.int16)
+    expected = (
+        np.count_nonzero(np.any(delta != 0, axis=2)) * 100.0 / (data.shape[0] * data.shape[1])
+    )
+    assert result.metrics["Changed Pixels Percentage"] == expected

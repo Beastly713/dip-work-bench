@@ -50,14 +50,22 @@ def test_equalization_lut_matches_mapping_and_constant_safe() -> None:
 
 def test_rgb_equalization_preserves_shape_and_luminance_strategy() -> None:
     data = np.array(
-        [[[30, 40, 50], [120, 130, 140]], [[200, 210, 220], [230, 240, 250]]], dtype=np.uint8
+        [[[30, 30, 30], [120, 120, 120]], [[200, 200, 200], [230, 230, 230]]],
+        dtype=np.uint8,
     )
     image = ImageAsset("rgb", data, ColourModel.RGB)
     result = HistogramEqualizationExecutor().execute(context(image, {}))
     output = result.primary_artifact.data
     assert output.colour_model is ColourModel.RGB  # type: ignore[union-attr]
     assert output.shape == image.shape  # type: ignore[union-attr]
-    expected = cv2.cvtColor(data, cv2.COLOR_RGB2YCrCb)
-    expected[..., 0] = cv2.LUT(expected[..., 0], equalization_lut(expected[..., 0]))
-    expected = cv2.cvtColor(expected, cv2.COLOR_YCrCb2RGB)
+    ycc = cv2.cvtColor(data, cv2.COLOR_RGB2YCrCb)
+    original_y = np.array(ycc[..., 0], copy=True, order="C")
+    lut = equalization_lut(original_y)
+    mapping = result.get_artifact("equalization_mapping").data["output"]  # type: ignore[index]
+    np.testing.assert_array_equal(mapping, lut)
+    expected_y = cv2.LUT(original_y, lut)
+    ycc[..., 0] = expected_y
+    expected = cv2.cvtColor(ycc, cv2.COLOR_YCrCb2RGB)
     np.testing.assert_array_equal(output.data, expected)  # type: ignore[union-attr]
+    output_y = cv2.cvtColor(output.data, cv2.COLOR_RGB2YCrCb)[..., 0]  # type: ignore[union-attr]
+    np.testing.assert_array_equal(output_y, expected_y)

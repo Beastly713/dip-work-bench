@@ -16,6 +16,29 @@ from dip_workbench.ui.panels import OperationParameterEditor
 from dip_workbench.ui.widgets import DisplayedExportTarget, GeneratedParameterEditor, MatrixViewer
 
 
+def resize_kernel_centered(kernel: object, new_size: int) -> tuple[tuple[float, ...], ...]:
+    try:
+        if not isinstance(kernel, (tuple, list)):
+            raise TypeError
+        rows = [[float(value) for value in row] for row in kernel]
+        source = rows if rows and all(len(row) == len(rows) for row in rows) else []
+    except (TypeError, ValueError):
+        source = []
+    output = [[0.0 for _ in range(new_size)] for _ in range(new_size)]
+    if not source:
+        return tuple(tuple(row) for row in output)
+    old_size = len(source)
+    overlap = min(old_size, new_size)
+    old_start = (old_size - overlap) // 2
+    new_start = (new_size - overlap) // 2
+    for row in range(overlap):
+        for column in range(overlap):
+            output[new_start + row][new_start + column] = source[old_start + row][
+                old_start + column
+            ]
+    return tuple(tuple(row) for row in output)
+
+
 class ConvolutionParameterEditor(OperationParameterEditor):
     def __init__(self, parent=None) -> None:  # type: ignore[no-untyped-def]
         from dip_workbench.operations.m05.custom_convolution import CUSTOM_CONVOLUTION_DEFINITION
@@ -30,6 +53,8 @@ class ConvolutionParameterEditor(OperationParameterEditor):
         self._values = {
             spec.key: spec.default for spec in CUSTOM_CONVOLUTION_DEFINITION.parameter_schema
         }
+        raw_size = self._values["kernel_size"]
+        self._last_size = int(raw_size) if isinstance(raw_size, SupportsInt) else 3
 
     def set_values(self, values: Mapping[str, object]) -> None:
         self._values.update(values)
@@ -42,7 +67,14 @@ class ConvolutionParameterEditor(OperationParameterEditor):
     def _changed(self, values: object) -> None:
         if isinstance(values, Mapping):
             self._values.update(values)
+        old_size = self._last_size
+        raw_size = self._values.get("kernel_size", old_size)
+        new_size = int(raw_size) if isinstance(raw_size, SupportsInt) else old_size
+        if self._values.get("preset") == "custom" and new_size != old_size:
+            self._values["kernel"] = resize_kernel_centered(self._values.get("kernel"), new_size)
+        self._last_size = new_size
         self._sync_kernel()
+        self.editor.set_values(self._values)
         self.values_changed.emit(dict(self._values))
 
     def _sync_kernel(self) -> None:

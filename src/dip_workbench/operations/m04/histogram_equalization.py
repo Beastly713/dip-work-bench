@@ -37,14 +37,6 @@ def equalization_lut(values: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(np.rint(np.clip(scaled, 0, 255)).astype(np.uint8))
 
 
-def _gray(image: ImageAsset) -> np.ndarray:
-    return (
-        cv2.cvtColor(image.data, cv2.COLOR_RGB2GRAY)
-        if image.colour_model is ColourModel.RGB
-        else image.data
-    )
-
-
 def _hist_series(values: np.ndarray, label: str) -> GraphSeries:
     counts, edges = np.histogram(values.reshape(-1), bins=256, range=(0, 256))
     x = ((edges[:-1] + edges[1:]) / 2.0).astype(float)
@@ -60,18 +52,20 @@ class HistogramEqualizationExecutor:
             ColourModel.GRAY,
         }:
             raise InputValidationError("Histogram Equalization requires RGB or grayscale input.")
-        source_gray = _gray(image)
-        lut = equalization_lut(source_gray)
         if image.colour_model is ColourModel.RGB:
             ycc = cv2.cvtColor(image.data, cv2.COLOR_RGB2YCrCb)
-            ycc[..., 0] = cv2.LUT(ycc[..., 0], lut)
+            source_plane = np.array(ycc[..., 0], copy=True, order="C")
+            lut = equalization_lut(source_plane)
+            equalized_plane = cv2.LUT(source_plane, lut)
+            ycc[..., 0] = equalized_plane
             output = cv2.cvtColor(ycc, cv2.COLOR_YCrCb2RGB)
             handling = "luminance"
-            output_gray = ycc[..., 0]
         else:
-            output = cv2.LUT(image.data, lut)
+            source_plane = np.array(image.data, copy=True, order="C")
+            lut = equalization_lut(source_plane)
+            equalized_plane = cv2.LUT(source_plane, lut)
+            output = equalized_plane
             handling = "grayscale"
-            output_gray = output
         context.cancellation_token.raise_if_cancelled()
         asset = ImageAsset(
             name=f"{Path(image.name).stem}-equalized",
@@ -85,20 +79,20 @@ class HistogramEqualizationExecutor:
             },
         )
         hist_graph = GraphData(
-            (_hist_series(source_gray, "Before"), _hist_series(output_gray, "After")),
+            (_hist_series(source_plane, "Before"), _hist_series(equalized_plane, "After")),
             title="Before and After Histograms",
             x_label="Intensity",
             y_label="Frequency",
             style=GraphStyle.LINE,
         )
         values = np.arange(256, dtype=np.uint8)
-        cdf_counts, _ = np.histogram(source_gray.reshape(-1), bins=256, range=(0, 256))
-        cdf = np.cumsum(cdf_counts).astype(np.float64) / source_gray.size
+        cdf_counts, _ = np.histogram(source_plane.reshape(-1), bins=256, range=(0, 256))
+        cdf = np.cumsum(cdf_counts).astype(np.float64) / source_plane.size
         metrics = {
-            "Input Mean": float(np.mean(source_gray)),
-            "Output Mean": float(np.mean(output_gray)),
-            "Input Standard Deviation": float(np.std(source_gray)),
-            "Output Standard Deviation": float(np.std(output_gray)),
+            "Input Mean": float(np.mean(source_plane)),
+            "Output Mean": float(np.mean(equalized_plane)),
+            "Input Standard Deviation": float(np.std(source_plane)),
+            "Output Standard Deviation": float(np.std(equalized_plane)),
         }
         return OperationResult(
             ImageArtifact("equalized_image", "Equalized Image", asset),

@@ -150,11 +150,11 @@ class AddNoiseExecutor:
             model = ColourModel.RGB
         elif processing == "luminance":
             ycc = cv2.cvtColor(image.data, cv2.COLOR_RGB2YCrCb)
-            y = ycc[..., 0]
-            noisy_y = _apply_noise(y, params, rng, whole_pixel=False)
+            source_y = np.array(ycc[..., 0], copy=True, order="C")
+            noisy_y = _apply_noise(source_y, params, rng, whole_pixel=False)
             ycc[..., 0] = noisy_y
             output = cv2.cvtColor(ycc, cv2.COLOR_YCrCb2RGB)
-            delta = noisy_y.astype(np.int16) - y.astype(np.int16)
+            delta = noisy_y.astype(np.int16) - source_y.astype(np.int16)
             model = ColourModel.RGB
         else:
             raise InputValidationError("Noise processing mode is invalid.")
@@ -162,7 +162,8 @@ class AddNoiseExecutor:
         flat_delta = delta.reshape(-1)
         counts, edges = np.histogram(flat_delta, bins=41, range=(-255, 255))
         centres = (edges[:-1] + edges[1:]) / 2.0
-        changed = float(np.count_nonzero(flat_delta)) * 100.0 / flat_delta.size
+        changed_mask = np.any(delta != 0, axis=2) if delta.ndim == 3 else delta != 0
+        changed = float(np.count_nonzero(changed_mask)) * 100.0 / changed_mask.size
         graph = GraphData(
             (
                 GraphSeries(

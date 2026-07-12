@@ -7,6 +7,7 @@ import pytest
 from dip_workbench.core import ColourModel, ImageAsset, InputValidationError
 from dip_workbench.execution import CancellationToken, OperationContext
 from dip_workbench.operations import BlurFiltersExecutor, CustomConvolutionExecutor
+from dip_workbench.ui.operations.filters import resize_kernel_centered
 
 
 def context(image: ImageAsset, parameters: dict[str, object]) -> OperationContext:
@@ -90,3 +91,13 @@ def test_mapping_modes_obey_invariants_and_source_immutable() -> None:
     assert normalized.primary_artifact.data.data.min() == 0  # type: ignore[union-attr]
     assert normalized.primary_artifact.data.data.max() == 255  # type: ignore[union-attr]
     np.testing.assert_array_equal(image.data, data)
+
+
+def test_custom_kernel_resize_preserves_centered_values() -> None:
+    kernel = ((0.0, 0.0, 0.0), (0.0, 7.5, 0.0), (0.0, 0.0, 0.0))
+    larger = resize_kernel_centered(kernel, 5)
+    assert len(larger) == 5
+    assert all(len(row) == 5 for row in larger)
+    assert larger[2][2] == 7.5
+    restored = resize_kernel_centered(larger, 3)
+    assert restored == kernel

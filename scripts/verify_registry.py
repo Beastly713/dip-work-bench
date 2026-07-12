@@ -17,13 +17,19 @@ def main() -> int:
                 "M04-02",
                 "M05-01",
                 "M05-05",
+                "M06-01",
+                "M06-02",
+                "M06-03",
+                "M06-04",
+                "M06-05",
+                "M06-06",
                 "M08-01",
             )
         )
         if len(ModuleId) != 10:
             raise OperationRegistryError("Expected exactly ten modules.")
-        if report.operation_count != 11:
-            raise OperationRegistryError("Expected exactly eleven production operations.")
+        if report.operation_count != 17:
+            raise OperationRegistryError("Expected exactly seventeen production operations.")
     except OperationRegistryError as error:
         print(f"Registry invalid: {error}")
         return 1
